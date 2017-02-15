@@ -1,0 +1,2 @@
+# losha
+Distributed similarity search
