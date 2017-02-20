@@ -7,5 +7,5 @@ add_library(lshcore-obj OBJECT
     lshitem.hpp)
 
 add_subdirectory(sparse)
-add_library(lshcore-libs STATIC $<TARGET_OBJECTS:lshcore-obj> $<TARGET_OBJECTS:lshcore-sparse-obj>)
-SET_TARGET_PROPERTIES(lshcore-libs PROPERTIES LINKER_LANGUAGE CXX)
+add_library(lshcore STATIC $<TARGET_OBJECTS:lshcore-obj> $<TARGET_OBJECTS:lshcore-sparse-obj>)
+SET_TARGET_PROPERTIES(lshcore PROPERTIES LINKER_LANGUAGE CXX)

@@ -6,5 +6,5 @@ add_library(lshcore-sparse-obj OBJECT
    sparsecoslshfactory.hpp
    apsparsecoslshfactory.hpp)
 
-add_library(lshsparse-lib STATIC $<TARGET_OBJECTS:lshcore-sparse-obj>)
-SET_TARGET_PROPERTIES(lshsparse-lib PROPERTIES LINKER_LANGUAGE CXX)
+add_library(lshsparse STATIC $<TARGET_OBJECTS:lshcore-sparse-obj>)
+SET_TARGET_PROPERTIES(lshsparse PROPERTIES LINKER_LANGUAGE CXX)

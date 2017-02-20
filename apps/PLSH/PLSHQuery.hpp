@@ -14,8 +14,7 @@ using namespace husky::losha;
 //         this->buckets =
 //             factory.calItemBuckets(this->getQuery());
 //         this->queryMsg = this->getQuery();
-//         // Husky::log_msg("query id: " + this->getItemId() + " and vectors size: " 
-//         //         +std::to_string(this->getItemVector().size() ));
+//
 //         // this->queryMsg = this->getItemId();
 //         // broadcast(*this, this->getItemVector() );
 //     }

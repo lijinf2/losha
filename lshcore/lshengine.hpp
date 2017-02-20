@@ -78,7 +78,7 @@ void loadItems(
     InputFormat& infmt) {
 
     if (husky::Context::get_global_tid() == 0)
-        husky::base::log_msg("(in loadItems) start: load items");
+        husky::LOG_I << "(in loadItems) start: load items" << std::endl;
 
     auto& loadItemCH = 
         husky::ChannelStore::create_push_channel<
@@ -118,7 +118,7 @@ void loadItems(
     });
 
     if (husky::Context::get_global_tid() == 0) 
-        husky::base::log_msg("(in loadItems) finish: load items");
+        husky::LOG_I << "(in loadItems) finish: load items" << std::endl;
     return;
 }
 
@@ -134,7 +134,7 @@ void loadQueries(
     /* drop queries if there are no bucket receiver*/
 
     if (husky::Context::get_global_tid() == 0) {
-        husky::base::log_msg("in loadQueries: start to load queries");
+        husky::LOG_I << "in loadQueries: start to load queries" << std::endl;
     }
 
     auto& loadQueryCH = 
@@ -149,7 +149,7 @@ void loadQueries(
     //     if (factory.getParamStr("broadcast") == "1")
     //         isBroadCastQueryOn = true;;
     // if (husky::Context::get_global_tid().id == 0) {
-    //     husky::base::log_msg("broadcast query: " + std::to_string(isBroadCastQueryOn));
+    //     husky::LOG_I << "broadcast query: " + std::to_string(isBroadCastQueryOn));
     // }
     // message buffer can be directly cleared. Program can not work without clear message buffers.
     
@@ -163,7 +163,7 @@ void loadQueries(
     });
 
     if (husky::Context::get_global_tid() == 0) {
-        husky::base::log_msg("in loadQueries: finish loading queries");
+        husky::LOG_I << "in loadQueries: finish loading queries" << std::endl;
     }
 }
 //
@@ -199,7 +199,7 @@ void loadQueries(
 //     husky::ObjList<ItemType>& item_list,
 //     InputFormat& infmt) {
 //
-//     if (husky::Context::get_global_tid().id == 0) husky::base::log_msg("(in addItems) start: add items");
+//     if (husky::Context::get_global_tid().id == 0) husky::LOG_I << "(in addItems) start: add items");
 //     // husky::LineInputFormat<husky::HDFSFileSplitter> infmt;
 //     infmt.set_input(itemPath);
 //     husky::Context::get_global_tid().load(
@@ -215,7 +215,7 @@ void loadQueries(
 //         return item;
 //     });
 //
-//     if (husky::Context::get_global_tid().id == 0) husky::base::log_msg("finish: register new item messages and new item objects created!");
+//     if (husky::Context::get_global_tid().id == 0) husky::LOG_I << "finish: register new item messages and new item objects created!");
 //     husky::Context::get_global_tid().list_execute(item_list, [&factory, &bucket_list](ItemType& item) {
 //         // otherwise duplicate item, this two lines can be deleted
 //         // should be commented
@@ -238,7 +238,7 @@ void loadQueries(
 //         }
 //     });
 //
-//     if (husky::Context::get_global_tid().id == 0) husky::base::log_msg("finish: register buckets messages and bucket objects created!");
+//     if (husky::Context::get_global_tid().id == 0) husky::LOG_I << "finish: register buckets messages and bucket objects created!");
 //     // create bukcet object, need list execute to activate the object creation
 //     husky::Context::get_global_tid().register_msg_ctor<ItemIdType>(
 //         bucket_list,
@@ -271,11 +271,11 @@ void loadQueries(
 //         husky::Context::get_global_tid().list_execute(item_list, [&](ItemType& item) {
 //             husky::get_messages<ItemIdType>(item);
 //         });
-//         if (husky::Context::get_global_tid().id == 1) husky::base::log_msg("(in addItems) finish: add items");
+//         if (husky::Context::get_global_tid().id == 1) husky::LOG_I << "(in addItems) finish: add items");
 //         return;
 //     }
 //
-//     if (husky::Context::get_global_tid().id == 1) husky::base::log_msg("(in loadItems) finish: load items");
+//     if (husky::Context::get_global_tid().id == 1) husky::LOG_I << "(in loadItems) finish: load items");
 //     return;
 // }
 //
@@ -294,7 +294,7 @@ void loadQueries(
 //     /* drop queries if there are no bucket receiver*/
 //
 //     if (husky::Context::get_global_tid().id == 0) {
-//         husky::base::log_msg("in addQueries: start to add queries in " + queryPath);
+//         husky::LOG_I << "in addQueries: start to add queries in " + queryPath);
 //     }
 //     infmt.set_input(queryPath);
 //     husky::Context::get_global_tid().load(
@@ -315,14 +315,14 @@ void loadQueries(
 //     //     if (factory.getParamStr("broadcast") == "1")
 //     //         isBroadCastQueryOn = true;;
 //     // if (husky::Context::get_global_tid().id == 0) {
-//     //     husky::base::log_msg("broadcast query: " + std::to_string(isBroadCastQueryOn));
+//     //     husky::LOG_I << "broadcast query: " + std::to_string(isBroadCastQueryOn));
 //     // }
 //     // message buffer can be directly cleared. Program can not work without clear message buffers.
 //     husky::Context::get_global_tid().list_execute(query_list, [&](QueryType & query) {
 //     });
 //
 //     if (husky::Context::get_global_tid().id == 0) {
-//         husky::base::log_msg("in addQueries: finish adding queries");
+//         husky::LOG_I << "in addQueries: finish adding queries");
 //     }
 // }
 //
@@ -338,7 +338,7 @@ void loshaengine(
     InputFormat& infmt, bool isQueryMode = true) {
 
     if (husky::Context::get_global_tid() == 0) 
-        husky::base::log_msg("start: similar items search for queries in batches\n\n");
+        husky::LOG_I << "start: similar items search for queries in batches\n\n" << std::endl;
 
     auto job_start = std::chrono::steady_clock::now();
 
@@ -354,7 +354,7 @@ void loshaengine(
     loadQueries(factory, query_list, setItem, infmt);
 
     if (husky::Context::get_global_tid() == 0) 
-        husky::base::log_msg("\n\nstart: similar items search for queries in batches");
+        husky::LOG_I << "\n\nstart: similar items search for queries in batches" << std::endl;
 
     // ITERATION
     int ITERATION = std::stoi(husky::Context::get_param("iters"));
@@ -373,7 +373,7 @@ void loshaengine(
     double accumualteIterationTime = 0.0;
     for (int iter = 0; iter < ITERATION; ++iter) {
         if (husky::Context::get_global_tid() == 0) 
-            husky::base::log_msg("start iteration: " + std::to_string(iter));
+            husky::LOG_I << "start iteration: " + std::to_string(iter) << std::endl;
 
         auto time_iter_start = std::chrono::steady_clock::now();
 
@@ -393,10 +393,9 @@ void loshaengine(
         auto time_query_finished = std::chrono::steady_clock::now();
         std::chrono::duration<double, std::milli> d_query = time_query_finished - time_iter_start;
         if (husky::Context::get_global_tid() == 0) 
-            husky::base::log_msg(
-               "iteration " + std::to_string(iter) 
-               + ": finish execute query in " 
-               + std::to_string(d_query.count() / 1000.0) + " seconds");
+            husky::LOG_I << "iteration " + std::to_string(iter) 
+               << ": finish execute query in " 
+               << std::to_string(d_query.count() / 1000.0) + " seconds" << std::endl;
 
         // execute buckets
         husky::list_execute(bucket_list, 
@@ -416,10 +415,9 @@ void loshaengine(
         auto time_bucket_finished = std::chrono::steady_clock::now();
         std::chrono::duration<double, std::milli> d_forward = time_bucket_finished - time_query_finished;
         if (husky::Context::get_global_tid() == 0) 
-            husky::base::log_msg(
-               "iteration " + std::to_string(iter) 
-               + ": finish execute forward in " 
-               + std::to_string(d_forward.count() / 1000.0) + " seconds");
+            husky::LOG_I << "iteration " + std::to_string(iter) 
+                << ": finish execute forward in " 
+                << std::to_string(d_forward.count() / 1000.0) + " seconds" << std::endl;
 
         // execute Items
         husky::list_execute(item_list,
@@ -439,34 +437,33 @@ void loshaengine(
         auto time_item_finished = std::chrono::steady_clock::now();
         std::chrono::duration<double, std::milli> d_answer = time_item_finished - time_bucket_finished;
         if (husky::Context::get_global_tid() == 0)
-            husky::base::log_msg(
-                "iteration " + std::to_string(iter)
-                + ": finish execute answer in "
-                + std::to_string(d_answer.count() / 1000.0) + " seconds");
+            husky::LOG_I << "iteration " + std::to_string(iter)
+                << ": finish execute answer in "
+                << std::to_string(d_answer.count() / 1000.0) + " seconds" << std::endl;
 
         // report per iteration time
         auto time_iter_finished = std::chrono::steady_clock::now();
         std::chrono::duration<double, std::milli> d_iteration = time_iter_finished -time_iter_start;
         if (husky::Context::get_global_tid() == 0) 
-            husky::base::log_msg("finish iteration: "
-                + std::to_string(iter) 
-                + " in " + std::to_string(d_iteration.count() / 1000.0) + " seconds");
+            husky::LOG_I << "finish iteration: "
+                << std::to_string(iter) 
+                << " in " + std::to_string(d_iteration.count() / 1000.0) + " seconds" << std::endl;
 
         // report accumulated time
         accumualteIterationTime += d_iteration.count() / 1000.0;
         if (husky::Context::get_global_tid() == 0)
-            husky::base::log_msg("finish iteration: " 
-                + std::to_string(iter) 
-                + " and accumulate time: "
-                + std::to_string(accumualteIterationTime) + " seconds");
+            husky::LOG_I << "finish iteration: " 
+                << std::to_string(iter) 
+                << " and accumulate time: "
+                << std::to_string(accumualteIterationTime) + " seconds" << std::endl;
     }
 
     auto job_finished = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> d_job = job_finished - job_start;
     if (husky::Context::get_global_tid() == 0) 
-        husky::base::log_msg("finished: similar items search for queries in batches in " 
-            + std::to_string(d_job.count() / 1000.0) 
-            + " seconds");
+        husky::LOG_I << "finished: similar items search for queries in batches in " 
+            << std::to_string(d_job.count() / 1000.0) 
+            << " seconds" << std::endl;
 }
 
 } // namespace losha

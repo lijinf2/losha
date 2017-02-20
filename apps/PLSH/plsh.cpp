@@ -54,8 +54,9 @@ void lsh() {
     auto init_f = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> d_init = init_f - start_s;
     if(husky::Context::get_global_tid == 0)
-        husky::base::log_msg("Job init finishes in " +
-                       std::to_string( d_init.count() / 1000.0 ) + " seconds" );
+        husky::LOG_I << "Job init finishes in " 
+                     << std::to_string( d_init.count() / 1000.0 ) 
+                     << " seconds" << std::endl;
 
     auto& lineInputFormat = husky::io::InputFormatStore::create_line_inputformat();
 
@@ -69,14 +70,16 @@ void lsh() {
     auto query_f = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> d_query = query_f - init_f;
     //free worker you can not do anything after free worker
-    if(husky::Context::get_global_tid() == 0) husky::base::log_msg("finish mit-plsh");
     if(husky::Context::get_global_tid() == 0)
-        husky::base::log_msg("Job query finishes in " +
-                       std::to_string( d_query.count() / 1000.0) + " seconds" );
+        husky::LOG_I << "Job query finishes in "  
+                     <<  std::to_string( d_query.count() / 1000.0)
+                     << " seconds" << std::endl;
+    if(husky::Context::get_global_tid() == 0) 
+        husky::LOG_I << "finish mit-plsh" << std::endl;
 }
 
 int main(int argc, char ** argv) {
-    husky::base::log_msg("program starts");
+    husky::LOG_I << "program starts" << std::endl;
     std::vector<std::string> args;
     args.push_back("hdfs_namenode");
     args.push_back("hdfs_namenode_port");
