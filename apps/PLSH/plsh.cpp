@@ -60,10 +60,7 @@ void lsh() {
 
     auto& lineInputFormat = husky::io::InputFormatStore::create_line_inputformat();
 
-    // vector<int> a;
-    // a.push_back(255);
-    // a.push_back(2);
-    // PLSHBucket b(a);
+
     loshaengine<PLSHQuery, PLSHBucket, PLSHItem, QueryMsg, AnswerMsg>(
         factory, setItem, lineInputFormat);
 
@@ -75,7 +72,7 @@ void lsh() {
                      <<  std::to_string( d_query.count() / 1000.0)
                      << " seconds" << std::endl;
     if(husky::Context::get_global_tid() == 0) 
-        husky::LOG_I << "finish mit-plsh" << std::endl;
+        husky::LOG_I << "finish plsh" << std::endl;
 }
 
 int main(int argc, char ** argv) {

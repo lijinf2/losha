@@ -18,12 +18,14 @@
 #include <string>
 #include <vector>
 
+#include "base/serialization.hpp"
+#include "base/log.hpp"
+#include "base/thread_support.hpp"
 #include "boost/functional/hash.hpp"
 #include "core/combiner.hpp"
-#include "base/log.hpp"
 #include "core/engine.hpp"
-#include "base/thread_support.hpp"
 #include "io/input/line_inputformat.hpp"
+#include "lib/aggregator_factory.hpp"
 
 #include "lshbucket.hpp"
 #include "lshitem.hpp"
@@ -144,15 +146,6 @@ void loadQueries(
     husky::load(infmt, 
         item_loader(factory, loadQueryCH, setItem));
 
-    // bool isBroadCastQueryOn = false;
-    // if (factory.getParamExistence("broadcast"))
-    //     if (factory.getParamStr("broadcast") == "1")
-    //         isBroadCastQueryOn = true;;
-    // if (husky::Context::get_global_tid().id == 0) {
-    //     husky::LOG_I << "broadcast query: " + std::to_string(isBroadCastQueryOn));
-    // }
-    // message buffer can be directly cleared. Program can not work without clear message buffers.
-    
     husky::list_execute(query_list, 
         [&factory, &loadQueryCH](QueryType& query) {
             auto msgs = loadQueryCH.get(query);
@@ -166,166 +159,68 @@ void loadQueries(
         husky::LOG_I << "in loadQueries: finish loading queries" << std::endl;
     }
 }
-//
-// template<typename ElemT>
-// struct HashCat : public husky::HashCombineBase {
-//     static void combine(vector<ElemT> & val, vector<ElemT> & inc) {
-//         // val.insert(val.end(), inc.begin(), inc.end());
-//         val.push_back(inc[0]);
-//     }
-// };
-//
-// // this is used in experiments glove and tweets, but will cause load imbalancing
-// // i.e. all the elements go to worker 0
-// // namespace std {
-// // template<>
-// // class hash<vector<int>> {
-// // public:
-// //     size_t operator() (const vector<int> & v) const {
-// //         size_t val = 0;
-// //         for (auto & x : v) val^=x;
-// //         return val;
-// //         // return v[1];
-// //     }
-// // }
-// // }
-// template<typename ItemIdType, typename ItemElementType,
-//          typename BucketType, typename ItemType, typename InputFormat>
-// void addItems(
-//     LSHFactory<ItemIdType, ItemElementType>& factory,
-//     std::string itemPath,
-//     void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&),
-//     husky::ObjList<BucketType>& bucket_list,
-//     husky::ObjList<ItemType>& item_list,
-//     InputFormat& infmt) {
-//
-//     if (husky::Context::get_global_tid().id == 0) husky::LOG_I << "(in addItems) start: add items");
-//     // husky::LineInputFormat<husky::HDFSFileSplitter> infmt;
-//     infmt.set_input(itemPath);
-//     husky::Context::get_global_tid().load(
-//         infmt,
-//         item_loader(factory, setItem, item_list));
-//
-//     husky::Context::get_global_tid().register_msg_ctor< vector<ItemElementType> >(
-//         item_list,
-//     [](vector<ItemElementType> &msg, const ItemIdType& key) {
-//         ItemType item;
-//         item.itemId = key;
-//         item.itemVector.swap(msg);
-//         return item;
-//     });
-//
-//     if (husky::Context::get_global_tid().id == 0) husky::LOG_I << "finish: register new item messages and new item objects created!");
-//     husky::Context::get_global_tid().list_execute(item_list, [&factory, &bucket_list](ItemType& item) {
-//         // otherwise duplicate item, this two lines can be deleted
-//         // should be commented
-//         // avoid items loaded in the last iteration sends messages in this iteration
-//         auto& msgs = husky::get_messages< vector<ItemElementType> >(item);
-//         if (msgs.size() < 1) return;
-//         assert(msgs.size() == 1);
-//
-//         vector< vector<int> > myBuckets = factory.calItemBuckets(item);
-//
-//         // send message to create bucket object
-//         vector< vector<int> >::iterator it;
-//         for (it = myBuckets.begin(); it != myBuckets.end(); ++it) {
-//             // In case we need to save memory
-//             // vector<ItemIdType> msg {item.getItemId()}
-//             // vector<ItemIdType> msg;
-//             // husky::Context::get_global_tid().send_message<HashCat<ItemIdType>>(msg, *it, bucket_list);
-//
-//             husky::Context::get_global_tid().send_message(item.getItemId(), *it, bucket_list);
-//         }
-//     });
-//
-//     if (husky::Context::get_global_tid().id == 0) husky::LOG_I << "finish: register buckets messages and bucket objects created!");
-//     // create bukcet object, need list execute to activate the object creation
-//     husky::Context::get_global_tid().register_msg_ctor<ItemIdType>(
-//         bucket_list,
-//     [] (const ItemIdType &itemId, const vector<int> & key) {
-//         BucketType b;
-//         // b.bucketId.swap(key);
-//         b.bucketId = key;
-//         // b.bucketId = std::move(key);
-//         return b;
-//     });
-//
-//     // if not enable aggregator
-//     if (!LSHContext::isCollectorOn()) {
-//         // query mode: mapping same as batch mode
-//         husky::Context::get_global_tid().list_execute(bucket_list,
-//         [&factory](BucketType& bucket) {
-//             // push items into bucket
-//             auto& msgs = husky::get_messages< ItemIdType >(bucket);
-//             for (auto& m : msgs)
-//                 bucket.itemIds.push_back(m);
-//
-//             // //debug
-//             // std::string debugStr = "";
-//             // debugStr += "bucket Id = " + std::to_string(bucket.id());
-//             // debugStr += ", and # of items =  " + std::to_string(bucket.itemIds.size());
-//             // debugStr += "\n";
-//             // bucket.write_to_hdfs(debugStr, factory.getParamStr("outputPath"));
-//         });
-//
-//         husky::Context::get_global_tid().list_execute(item_list, [&](ItemType& item) {
-//             husky::get_messages<ItemIdType>(item);
-//         });
-//         if (husky::Context::get_global_tid().id == 1) husky::LOG_I << "(in addItems) finish: add items");
-//         return;
-//     }
-//
-//     if (husky::Context::get_global_tid().id == 1) husky::LOG_I << "(in loadItems) finish: load items");
-//     return;
-// }
-//
-// first build item list, then bucket list
 
-//
-// template<typename ItemIdType, typename ItemElementType,
-//          typename QueryType, typename InputFormat >
-// void addQueries(
-//     LSHFactory<ItemIdType, ItemElementType>& factory,
-//     std::string queryPath,
-//     void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&),
-//     husky::ObjList<QueryType>& query_list,
-//     InputFormat& infmt) {
-//
-//     /* drop queries if there are no bucket receiver*/
-//
-//     if (husky::Context::get_global_tid().id == 0) {
-//         husky::LOG_I << "in addQueries: start to add queries in " + queryPath);
-//     }
-//     infmt.set_input(queryPath);
-//     husky::Context::get_global_tid().load(
-//         infmt,
-//         item_loader(factory, setItem, query_list));
-//
-//     // should work: why not directly create object
-//     husky::Context::get_global_tid().register_msg_ctor<vector<ItemElementType>>(
-//     query_list, [] (const vector<ItemElementType>& msg, const ItemIdType& key) {
-//         QueryType q;
-//         q.itemId = key;
-//         q.itemVector = msg;
-//         return q;
-//     });
-//
-//     // bool isBroadCastQueryOn = false;
-//     // if (factory.getParamExistence("broadcast"))
-//     //     if (factory.getParamStr("broadcast") == "1")
-//     //         isBroadCastQueryOn = true;;
-//     // if (husky::Context::get_global_tid().id == 0) {
-//     //     husky::LOG_I << "broadcast query: " + std::to_string(isBroadCastQueryOn));
-//     // }
-//     // message buffer can be directly cleared. Program can not work without clear message buffers.
-//     husky::Context::get_global_tid().list_execute(query_list, [&](QueryType & query) {
-//     });
-//
-//     if (husky::Context::get_global_tid().id == 0) {
-//         husky::LOG_I << "in addQueries: finish adding queries");
-//     }
-// }
-//
+// broadcast all queries in query_list to lshfactory
+std::once_flag broadcast_flag;
+template<
+    typename ItemIdType, typename ItemElementType, typename QueryType>
+void broadcastQueries(
+    LSHFactory<ItemIdType, ItemElementType>& factory,
+    husky::ObjList<QueryType>& query_list){
+
+    // define query aggregator and set up _idToQueryVector in factory
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "in broadcastQueries" << std::endl;
+    }
+    typedef std::pair<ItemIdType, std::vector<ItemElementType>> IdVectorPair;
+    typedef std::vector<IdVectorPair> QueryColType;
+
+    auto update_to_col = [](QueryColType& collector, const IdVectorPair& e) {
+        // husky::LOG_I << "broadcast out " << e.first << std::endl;
+        collector.push_back(e);
+    };
+
+    husky::lib::Aggregator< QueryColType > query_vector_agg(
+        QueryColType(), // parameter for initialization 
+        [update_to_col](QueryColType& a, const QueryColType& b) { // parameter for aggregation rule
+            for (const auto& e : b ) {
+                update_to_col(a, e);
+            }
+        },
+        [](QueryColType& col) {col.clear();}, // parameter for reset aggregator
+        [update_to_col](husky::base::BinStream& in, QueryColType& col) { // parameter for deserialization
+            col.clear();
+            for (size_t n = husky::base::deser<size_t>(in); n--;) {
+                update_to_col(col, husky::base::deser<IdVectorPair>(in));
+            }
+        }, 
+        [](husky::base::BinStream& out, const QueryColType& col){ // parameter for serialization
+            out << col.size();
+            for (auto& vec : col) {
+                out << vec;
+            }
+        });
+
+    husky::list_execute(query_list,
+        [&query_vector_agg, &update_to_col](QueryType& query) {
+        // husky::LOG_I << "in query list " << query.getItemId() << std::endl;
+        query_vector_agg.update(
+            update_to_col,
+            std::make_pair(query.getItemId(), query.getItemVector()));
+    });
+
+    // insert broadcast query to factory, call once
+    std::call_once(broadcast_flag, [&factory, &query_vector_agg](){
+        for (auto p : query_vector_agg.get_value()) {
+            factory.insertQueryVector(p.first, p.second);
+            husky::LOG_I << "insert query " << p.first << std::endl;
+        }
+    });
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished broadcastQueries" << std::endl;
+    }
+}
+
 
 template<
     typename QueryType, typename BucketType, typename ItemType,
@@ -348,10 +243,18 @@ void loshaengine(
     infmt.set_input(husky::Context::get_param("itemPath"));
     loadItems(factory, bucket_list, item_list, setItem, infmt);
 
+    // debug
+    husky::list_execute(item_list, [](ItemType& item){
+        husky::LOG_I << "item readed: " << item.toString() << std::endl;
+    });
+    return ;
+    // end of debug
     auto & query_list =
         husky::ObjListStore::create_objlist<QueryType>();
     infmt.set_input(husky::Context::get_param("queryPath"));
     loadQueries(factory, query_list, setItem, infmt);
+
+    broadcastQueries(factory, query_list);
 
     if (husky::Context::get_global_tid() == 0) 
         husky::LOG_I << "\n\nstart: similar items search for queries in batches" << std::endl;

@@ -26,9 +26,9 @@ endif()
 
 add_subdirectory(husky)
 add_subdirectory(lshcore)
+add_subdirectory(test)
 add_subdirectory(apps)
 
 add_library(losha STATIC
-    $<TARGET_OBJECTS:lshcore-obj> 
-    $<TARGET_OBJECTS:lshcore-sparse-obj>)
+    $<TARGET_OBJECTS:lshcore-obj>)
 SET_TARGET_PROPERTIES(losha PROPERTIES LINKER_LANGUAGE CXX)

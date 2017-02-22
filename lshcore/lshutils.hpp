@@ -22,78 +22,64 @@
 #include <vector>
 
 #include "boost/functional/hash.hpp"
-#include "base/log.hpp"
-#include "core/engine.hpp"
-#include "densevector.hpp"
 
 namespace husky {
 namespace losha {
 
-void normalize(std::vector<float> &vec) {
-    assert(vec.size() != 0);
-    float sum = 0;
-    for (auto& v : vec) {
-        sum += v * v;
-    }
-    sum = sqrt(sum);
-    assert(fabs(sum - 0) > 0.0000000001);
-    for (int i = 0; i < vec.size(); ++i) {
-        vec[i] /= sum;
-    }
-}
+void normalize(std::vector<float> &vec);
 
-void normalize(std::vector<std::pair<int, float> > &vec) {
-    assert(vec.size() != 0);
-    float sum = 0;
-    for (auto& v : vec) {
-        sum += v.second * v.second;
-    }
-    sum = sqrt(sum);
-    assert(fabs(sum - 0) > 0.0000000001);
-    for (int i = 0; i < vec.size(); ++i) {
-        vec[i].second /= sum;
-    }
-}
+void normalize(std::vector<std::pair<int, float> > &vec); 
 
-std::pair<int, float> lshStofPair(const std::string& pairStr) {
-    int splitter = pairStr.find(':');
-    int index = std::stoi(pairStr.substr(0, splitter));
-    float value = std::stof(pairStr.substr(splitter+1));
-    return std::pair<int, float>(index, value);
-}
+std::pair<int, float> lshStofPair(const std::string& pairStr);
 
 } // namespace losha
 } // namespace husky
-// /*
-//  * declaration
-//  * */
-//
-// namespace std {
-//
-// std::string to_string(const std::string& str) {
-//     return str;
-// }
-// template<typename firstT, typename secondT>
-// std::string to_string(const std::pair<firstT, secondT>& p);
-//
-// template<typename T>
-// std::string to_string(const std::vector<T>& v);
-//
-// template<typename T>
-// std::string to_string(const std::vector< std::vector<T> >& matrix);
-//
-// template<typename ItemIdType, typename ItemElementType>
-// std::string to_string(const DenseVector<ItemIdType, ItemElementType>& p);
-//
-// // hash for vectors
-// template<typename T>
-// class hash< std::vector<T> > {
-//         public:
-//             size_t operator()(const std::vector<T> vec) const;
-// };
-//
-// }  // namespace std
-//
+
+namespace std {
+
+std::string to_string(const std::string& str);
+
+template<typename firstT, typename secondT>
+std::string to_string(const std::pair<firstT, secondT> &p) {
+    return to_string(p.first) + ":" + to_string(p.second);
+}
+
+template<typename T>
+std::string to_string(const std::vector<T>& v) {
+    std::string str = "<";
+    for (const T& e : v) {
+        str += std::to_string(e) + " ";
+    }
+    str += ">";
+    return str;
+}
+
+template<typename T>
+std::string to_string(const std::vector< std::vector<T> >& matrix) {
+    std::string str = "\n\n[";
+    for (auto & vec : matrix) {
+        str += std::to_string(vec);
+        str += "\n";
+    }
+    str += "]\n\n";
+    return str;
+}
+
+// hash for vectors
+template<typename T>
+class hash< std::vector<T> > {
+public:
+    size_t operator()(const std::vector<T> vec) const {
+        size_t seed = 0;
+        for (auto& v : vec) {
+            boost::hash_combine(seed, v);
+        }
+        return seed;
+    }
+};
+
+}  // namespace std
+
 // // report contents in obj lists, require obj implement toString()
 // template<typename ObjType>
 // void reportList(husky::ObjList<ObjType> list);
@@ -197,58 +183,6 @@ std::pair<int, float> lshStofPair(const std::string& pairStr) {
 //  * Implementation 
 //  * */
 //
-// namespace std {
-//
-// template<typename firstT, typename secondT>
-// std::string to_string(const std::pair<firstT, secondT> &p) {
-//     return "(" + to_string(p.first) + "\t" + to_string(p.second) + ")";
-// }
-//
-// template<typename T>
-// std::string to_string(const std::vector<T> &v) {
-//     std::string str = "<";
-//     for (const T& e : v) {
-//         str += std::to_string(e) + ", ";
-//     }
-//     str += ">";
-//     return str;
-// }
-//
-// template<typename T>
-// std::string to_string(const std::vector< std::vector<T> >& matrix) {
-//     std::string str = "\n\n[";
-//     for (auto & vec : matrix) {
-//         str += std::to_string(vec);
-//         str += "\n";
-//     }
-//     str += "]\n\n";
-//     return str;
-// }
-//
-// template<typename ItemElementType>
-// std::string to_string(const DenseVector<std::string, ItemElementType>& p) {
-//     std::string result = "(id: " + p.getItemId() + "\titemVector: "
-//         + std::to_string(p.getItemVector()) + ")\n";
-//     return result;
-// }
-//
-// template<typename ItemIdType, typename ItemElementType>
-// std::string to_string(const DenseVector<ItemIdType, ItemElementType>& p) {
-//     std::string result = "(id: " + std::to_string(p.getItemId()) + "\titemVector: "
-//         + std::to_string(p.getItemVector()) + ")\n";
-//     return result;
-// }
-//
-// template<typename T>
-// size_t hash< std::vector<T> >::operator()(const std::vector<T> vec) const {
-//     size_t seed = 0;
-//     for (auto& v : vec) {
-//         boost::hash_combine(seed, v);
-//     }
-//     return seed;
-// }
-//
-// }  // namespace std
 //
 // int lshStoi(const std::string& intString) {
 //     return std::stoi(intString);

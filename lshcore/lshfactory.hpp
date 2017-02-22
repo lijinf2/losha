@@ -17,6 +17,7 @@
 // LSHFactory could be expensive for high dimensional data. E.g., 500k tweet, 100 band and 16 row, 24 threads, totally 5 x 10^8 * 24 = 10G
 
 #pragma once
+#include <unordered_map>
 #include <vector>
 
 #include "densevector.hpp"
@@ -32,6 +33,7 @@ public:
     int _band;
     int _row;
     int _dimension;
+    std::unordered_map<ItemIdType, std::vector<ItemElementType>> _idToQueryVector;
 
     // three most important virtual functions, calDist, oldCalSigs and calProjs
     virtual float calDist(
@@ -112,6 +114,25 @@ public:
     inline int getDimension() {
         return _dimension;
     }
+
+    // Fetch broadcasted queries into _idToQueryVector
+    inline void insertQueryVector(int qid, const std::vector<ItemElementType>& qvec) {
+        if (_idToQueryVector.find(qid) == _idToQueryVector.end()) {
+            ASSERT_MSG(0, "query already exists");
+        }
+        _idToQueryVector[qid] = qvec;
+    }
+
+    const std::vector<ItemElementType>& getQueryVector(ItemIdType qid){
+        ASSERT_MSG(_idToQueryVector.size() != 0, "All queries are processed");
+        if (_idToQueryVector.find(qid) == _idToQueryVector.end()) {
+            ASSERT_MSG(0, "cannot find query");
+        }
+        return _idToQueryVector[qid];
+    }
+    
+    // handle aggregator variable
+
     // /* general functions*/
     // /*
     //  * get buckets from signatures of a point, should work for both denseVector and sparseVector

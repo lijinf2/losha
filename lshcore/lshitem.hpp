@@ -36,17 +36,12 @@ class LSHItem: public DenseVector<ItemIdType, ItemElementType> {
 public:
 
     static thread_local std::vector< std::pair<ItemIdType, AnswerMsg> > item_msg_buffer;
-    std::vector< QueryMsg > query_msg_buffer;
 
     // require by Husky object
     explicit LSHItem(const typename LSHItem::KeyT& id) : DenseVector<ItemIdType, ItemElementType>(id) {};
 
     inline void sendToQuery(const ItemIdType& qId, const AnswerMsg& msg) {
         item_msg_buffer.push_back(std::make_pair(qId, msg));
-    }
-
-    const std::vector<QueryMsg>& getQueryMsg() {
-        return query_msg_buffer;
     }
 
     virtual void answer(
@@ -63,16 +58,6 @@ thread_local std::vector<std::pair<ItemIdType, AnswerMsg>> LSHItem<ItemIdType,
     ItemElementType,
     QueryMsg,
     AnswerMsg>::item_msg_buffer;
-
-// should be deprecated
-// template<typename ItemIdType,
-//          typename ItemElementType,
-//          typename QueryMsg,
-//          typename AnswerMsg >
-// std::string LSHItem<ItemIdType,
-//     ItemElementType,
-//     QueryMsg,
-//     AnswerMsg>::default_list_name = "item_list";
 
 } // namespace losha
 } // namespace husky

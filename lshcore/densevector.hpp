@@ -19,9 +19,11 @@
 #include <string>
 #include <vector>
 
-#include "boost/tokenizer.hpp"
-#include "base/log.hpp"
-#include "core/engine.hpp"
+// #include "boost/tokenizer.hpp"
+// #include "base/log.hpp"
+// #include "core/engine.hpp"
+
+#include "lshcore/lshutils.hpp"
 
 namespace husky {
 namespace losha {
@@ -83,6 +85,22 @@ public:
     friend husky::BinStream & operator>>(husky::BinStream & stream, DenseVector<ItemIdType, ItemElementType>& p) {
         stream >> p.itemId >> p.itemVector;
         return stream;
+    }
+
+    friend std::string to_string(const DenseVector<ItemIdType, ItemElementType>& p) {
+        std::string result = "(id: " + std::to_string(p.getItemId()) + "\titemVector: "
+            + std::to_string(p.getItemVector()) + ")\n";
+        return result;
+    }
+
+    std::string toString(){
+        std::string str = "";
+        str += std::to_string(getItemId());
+        for (const auto& e : getItemVector()) {
+            str += " ";
+            str += std::to_string(e);
+        }
+        return str;
     }
 };
 
