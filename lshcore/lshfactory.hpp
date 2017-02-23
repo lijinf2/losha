@@ -117,7 +117,7 @@ public:
 
     // Fetch broadcasted queries into _idToQueryVector
     inline void insertQueryVector(int qid, const std::vector<ItemElementType>& qvec) {
-        if (_idToQueryVector.find(qid) == _idToQueryVector.end()) {
+        if (_idToQueryVector.find(qid) != _idToQueryVector.end()) {
             ASSERT_MSG(0, "query already exists");
         }
         _idToQueryVector[qid] = qvec;

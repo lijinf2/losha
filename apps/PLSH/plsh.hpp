@@ -1,9 +1,15 @@
 #pragma once
 #include <unordered_set>
+
+#include "core/engine.hpp"
+#include "io/hdfs_manager.hpp"
+#include "io/input/line_inputformat.hpp"
+
 #include "lshcore/lshbucket.hpp"
 #include "lshcore/lshitem.hpp"
 #include "lshcore/lshquery.hpp"
 using namespace husky::losha;
+using namespace husky::io::HDFS;
 using std::vector;
 using std::pair;
 
@@ -47,15 +53,19 @@ public:
         	auto& queryVector = 
                 factory.getQueryVector(queryId);
 
-            husky::LOG_I << "received query id " << queryId << std::endl;;
-        	// float distance = factory.calDistance(queryVector, this->getItemVector());
-            //
-        	// if(distance <= 0.9) {
-        	// 	std::string result;
-        	// 	result += std::to_string( queryId ) + " ";
-        	// 	result += std::to_string( this->getItemId() ) + " " + std::to_string(distance) + "\n";
-        	// 	Husky::HDFS::Write( Husky::Context::get_params("hdfs_namenode"), Husky::Context::get_params("hdfs_namenode_port"), result, LSHContext::getOutputPath(), get_worker().id );
-        	// }
+        	float distance = factory.calDist(queryVector, this->getItemVector());
+
+        	if(distance <= 0.9) {
+        		std::string result;
+        		result += std::to_string( queryId ) + " ";
+        		result += std::to_string( this->getItemId() ) + " " + std::to_string(distance) + "\n";
+        		husky::io::HDFS::Write( 
+                    husky::Context::get_param("hdfs_namenode"),
+                    husky::Context::get_param("hdfs_namenode_port"),
+                    result,
+                    husky::Context::get_param("outputPath"),
+                    husky::Context::get_global_tid());
+        	}
         }
     }
 };

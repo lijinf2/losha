@@ -133,8 +133,6 @@ void loadQueries(
     void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&),
     InputFormat& infmt) {
 
-    /* drop queries if there are no bucket receiver*/
-
     if (husky::Context::get_global_tid() == 0) {
         husky::LOG_I << "in loadQueries: start to load queries" << std::endl;
     }
@@ -203,17 +201,17 @@ void broadcastQueries(
 
     husky::list_execute(query_list,
         [&query_vector_agg, &update_to_col](QueryType& query) {
-        // husky::LOG_I << "in query list " << query.getItemId() << std::endl;
         query_vector_agg.update(
             update_to_col,
             std::make_pair(query.getItemId(), query.getItemVector()));
     });
 
+    husky::lib::AggregatorFactory::sync();
+    // should flush 
     // insert broadcast query to factory, call once
     std::call_once(broadcast_flag, [&factory, &query_vector_agg](){
         for (auto p : query_vector_agg.get_value()) {
             factory.insertQueryVector(p.first, p.second);
-            husky::LOG_I << "insert query " << p.first << std::endl;
         }
     });
     if (husky::Context::get_global_tid() == 0) {
@@ -243,17 +241,12 @@ void loshaengine(
     infmt.set_input(husky::Context::get_param("itemPath"));
     loadItems(factory, bucket_list, item_list, setItem, infmt);
 
-    // debug
-    husky::list_execute(item_list, [](ItemType& item){
-        husky::LOG_I << "item readed: " << item.toString() << std::endl;
-    });
-    return ;
-    // end of debug
     auto & query_list =
         husky::ObjListStore::create_objlist<QueryType>();
     infmt.set_input(husky::Context::get_param("queryPath"));
     loadQueries(factory, query_list, setItem, infmt);
 
+    // end of debug
     broadcastQueries(factory, query_list);
 
     if (husky::Context::get_global_tid() == 0) 

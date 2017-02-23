@@ -86,6 +86,7 @@ int main(int argc, char ** argv) {
     args.push_back("iters");
     args.push_back("queryPath"); // the inputPath
     args.push_back("itemPath"); // the outputPath
+    args.push_back("outputPath"); // the inputPath
     if (husky::init_with_args(argc, argv, args)) {
         husky::run_job(lsh);
         return 0;
