@@ -9,7 +9,6 @@
 #include "lshcore/lshitem.hpp"
 #include "lshcore/lshquery.hpp"
 using namespace husky::losha;
-using namespace husky::io::HDFS;
 using std::vector;
 using std::pair;
 
@@ -59,7 +58,7 @@ public:
         		std::string result;
         		result += std::to_string( queryId ) + " ";
         		result += std::to_string( this->getItemId() ) + " " + std::to_string(distance) + "\n";
-        		husky::io::HDFS::Write( 
+                husky::io::HDFS::Write( 
                     husky::Context::get_param("hdfs_namenode"),
                     husky::Context::get_param("hdfs_namenode_port"),
                     result,

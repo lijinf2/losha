@@ -24,11 +24,14 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -w")
 endif()
 
+# dependencies on husky
 add_subdirectory(husky)
+add_definitions(${HUSKY_EXTERNAL_DEFINITION})
+
 add_subdirectory(lshcore)
 add_subdirectory(test)
 add_subdirectory(apps)
 
-add_library(losha STATIC
+add_library(losha-lib STATIC
     $<TARGET_OBJECTS:lshcore-obj>)
-SET_TARGET_PROPERTIES(losha PROPERTIES LINKER_LANGUAGE CXX)
+SET_TARGET_PROPERTIES(losha-lib PROPERTIES LINKER_LANGUAGE CXX)
