@@ -120,6 +120,7 @@ public:
     }
 
     // this is the same as denseVector except parameter is different
+    // compress bit string into int
     virtual vector< vector<int> > calSigs(
             const vector< pair<int, ItemElementType> > &itemVector) override{
 

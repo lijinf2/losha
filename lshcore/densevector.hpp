@@ -22,6 +22,7 @@
 // #include "boost/tokenizer.hpp"
 // #include "base/log.hpp"
 // #include "core/engine.hpp"
+#include "core/engine.hpp"
 
 #include "lshcore/lshutils.hpp"
 

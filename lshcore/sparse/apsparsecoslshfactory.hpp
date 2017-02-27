@@ -64,17 +64,17 @@ public:
 
     // this is the same as denseVector except parameter is different
     virtual vector<bool> calSignaturesInBool(
-        const vector < pair<int, ItemElementType> > &itemVector)override {
+        const vector < pair<int, ItemElementType> > &itemVector) override {
 
 
         vector<bool> halfSig;
         halfSig.resize( this->_hashFunctions.size() );
         int index = 0;
         for(auto& fun : this->_hashFunctions) {
-            // halfSig[index++] = fun.getProjection(itemVector);
-            halfSig.at(index++) = fun.getProjection(itemVector);
+            halfSig.at(index++) = fun.getQuantization(itemVector);
         }
 
+        husky::LOG_I << "invoke calSignatureInBool " << std::endl;
         //this->_row = getRows / 2; this->_band * (this->_band - 1) == getBands()
         vector<bool> allSignatures;
         allSignatures.resize( this->_setBand * this->_setRow);

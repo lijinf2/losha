@@ -66,7 +66,6 @@ void lsh() {
 
     auto query_f = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> d_query = query_f - init_f;
-    //free worker you can not do anything after free worker
     if(husky::Context::get_global_tid() == 0)
         husky::LOG_I << "Job query finishes in "  
                      <<  std::to_string( d_query.count() / 1000.0)
@@ -76,7 +75,7 @@ void lsh() {
 }
 
 int main(int argc, char ** argv) {
-    husky::LOG_I << "program starts" << std::endl;
+    husky::LOG_I << "plsh program starts" << std::endl;
     std::vector<std::string> args;
     args.push_back("hdfs_namenode");
     args.push_back("hdfs_namenode_port");
