@@ -26,7 +26,6 @@ public:
             LSHFactory<ItemIdType, ItemElementType>& factory,
             const vector<AnswerMsg>& inMsg) override {
 
-        this->broadcast();
         this->queryMsg = this->getItemId();
         for(auto &bk : factory.calItemBuckets(*this)) {
             this->sendToBucket(bk);
