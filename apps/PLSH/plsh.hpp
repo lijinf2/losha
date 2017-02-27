@@ -3,7 +3,6 @@
 
 #include "core/engine.hpp"
 #include "io/hdfs_manager.hpp"
-#include "io/input/line_inputformat.hpp"
 
 #include "lshcore/lshbucket.hpp"
 #include "lshcore/lshitem.hpp"
@@ -45,7 +44,7 @@ public:
         std::unordered_set<QueryMsg> evaluated;
         for(auto& queryId : inMsgs ) {
         	
-        	if(evaluated.find( queryId ) != evaluated.end() ) continue;
+        	if(evaluated.find( queryId ) != evaluated.end()) continue;
         	evaluated.insert(queryId );
 
         	auto& queryVector = 
