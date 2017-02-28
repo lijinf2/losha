@@ -253,7 +253,9 @@ void loshaengine(
         husky::LOG_I << "\n\nstart: similar items search for queries in batches" << std::endl;
 
     // ITERATION
-    int ITERATION = std::stoi(husky::Context::get_param("iters"));
+    int ITERATION = 1;
+    if(husky::Context::get_param("iters") != "") 
+       ITERATION =  std::stoi(husky::Context::get_param("iters"));
 
     // define three channels
     auto& query2BucketCH = 

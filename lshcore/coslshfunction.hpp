@@ -42,7 +42,7 @@ public:
     inline float dotProduct(
             const std::vector< std::pair<int, ItemElementType> >& v2) {
         float product = 0;
-        for (int i =  0; i < v2.size(); ++i) {
+        for (int i = 0; i < v2.size(); ++i) {
             product += _a[ v2[i].first ] * v2[i].second;
         }
         return product;
