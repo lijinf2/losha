@@ -30,7 +30,7 @@ add_definitions(${HUSKY_EXTERNAL_DEFINITION})
 
 add_subdirectory(lshcore)
 add_subdirectory(l2h)
-add_subdirectory(test)
+#add_subdirectory(test)
 add_subdirectory(apps)
 
 add_library(losha-lib STATIC
