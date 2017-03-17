@@ -42,7 +42,7 @@ void lsh() {
 
     auto init_f = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> d_init = init_f - start_s;
-    if (husky::Context::get_global_tid == 0)
+    if (husky::Context::get_global_tid() == 0)
         husky::LOG_I << "Job init finishes in "
             << std::to_string(d_init.count() / 1000.0) 
             << " seconds" << std::endl;

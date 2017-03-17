@@ -1,3 +1,6 @@
 [submodule "husky"]
 	path = husky
 	url = https://github.com/husky-team/husky
+[submodule "eigen"]
+	path = eigen
+	url = https://github.com/RLovelett/eigen.git
