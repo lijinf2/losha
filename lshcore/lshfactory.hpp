@@ -123,14 +123,17 @@ public:
         _idToQueryVector[qid] = qvec;
     }
 
-    const std::vector<ItemElementType>& getQueryVector(ItemIdType qid){
+    const std::vector<ItemElementType>& getQueryVector(ItemIdType qid) {
         ASSERT_MSG(_idToQueryVector.size() != 0, "All queries are processed");
         if (_idToQueryVector.find(qid) == _idToQueryVector.end()) {
             ASSERT_MSG(0, "cannot find query");
         }
         return _idToQueryVector[qid];
     }
-    
+
+    const std::unordered_map<ItemIdType, std::vector<ItemElementType>>& getAllQueries() {
+        return _idToQueryVector;
+    }
     // handle aggregator variable
 
     // /* general functions*/
