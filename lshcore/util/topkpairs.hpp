@@ -53,9 +53,13 @@ private:
 
 template<typename IdType, typename DistType>
 void TopkPairs<IdType, DistType>::push( const std::pair<IdType, DistType>& p) {
-    _maxHeap.push(p);
-    if (_maxHeap.size() > _maxSize) {
-        _maxHeap.pop();
+    if (_maxHeap.size() < _maxSize) {
+        _maxHeap.push(p);
+    } else {
+        if (p.second < _maxHeap.top().second) {
+            _maxHeap.pop();
+            _maxHeap.push(p);
+        }
     }
 }
 
