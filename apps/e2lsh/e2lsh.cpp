@@ -23,7 +23,12 @@
 
 #include "lshcore/lshengine.hpp"
 #include "lshcore/e2lshfactory.hpp"
+
+// for sift1b
 #include "sift1b.hpp"
+
+// for gist1m
+#include "gist1m.hpp"
 using namespace husky::losha;
 E2LSHFactory<ItemIdType, ItemElementType> factory;
 std::once_flag factory_flag;
@@ -42,7 +47,7 @@ void lsh() {
 
     auto init_f = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> d_init = init_f - start_s;
-    if (husky::Context::get_global_tid == 0)
+    if (husky::Context::get_global_tid() == 0)
         husky::LOG_I << "Job init finishes in "
             << std::to_string(d_init.count() / 1000.0) 
             << " seconds" << std::endl;
