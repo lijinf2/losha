@@ -118,9 +118,8 @@ A snippet of the results is as following:
 
 Since we are running nearest neighbor against itself, the nearest is the same entry.
 
-License
 
----------------
+#License
 
 Copyright 2016-2017 Husky Team
 
