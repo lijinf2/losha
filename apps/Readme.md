@@ -8,9 +8,7 @@ Exact Euclidean Locality Sensitive Hashing (E2LSH) was proposed by Alexandr Ando
 Examples will be introduced in the E2LSH app.
 
 
-License
-
----------------
+# License
 
 Copyright 2016-2017 Husky Team
 

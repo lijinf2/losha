@@ -88,11 +88,11 @@ Here, the config file is also setup on a distributed setting (which is worker20)
 ## Running the Application
 
 ```bash
-./Master --conf ../../conf/e2lsh.conf
+./Master --conf path/to/conf/e2lsh.conf
 ```
 
 ```bash
-../conf/exec.sh ./e2lsh --conf ../conf/e2lsh.conf
+../conf/exec.sh ./e2lsh --conf path/to/conf/e2lsh.conf
 ```
 
 ## Results
