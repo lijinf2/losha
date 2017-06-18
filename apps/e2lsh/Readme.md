@@ -84,6 +84,7 @@ info=w20:1
 
 Here we set our DE2LSH with band, row, width (W) and dimension accordingly. These parameter can be fine-tuned according to different data sets.
 Here, the config file is also setup on a distributed setting (which is worker20).
+Don't forget to set the works accordingly to `slave`.
 
 ## Running the Application
 
