@@ -96,6 +96,7 @@ void loadItems(
     husky::list_execute(item_list, 
         [&factory, &loadItemCH, &loadBucketCH](ItemType& item) {
             auto msgs = loadItemCH.get(item);
+            
             assert(msgs.size() == 1);
 
             item.setItemVector(msgs[0]);

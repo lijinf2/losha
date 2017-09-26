@@ -6,5 +6,5 @@ bands:1
 rows:20
 W:600
 dimension:128
-maxIteration:1	
+maxIteration:1  
 output: 1008 records: 1000 same ids with queries + 8 not
