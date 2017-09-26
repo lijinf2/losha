@@ -24,11 +24,14 @@
 #include "lshcore/lshengine.hpp"
 #include "lshcore/e2lshfactory.hpp"
 
+// for sift10K
+#include "sift10k.hpp"
+
 // for sift1b
-#include "sift1b.hpp"
+//#include "sift1b.hpp"
 
 // for gist1m
-#include "gist1m.hpp"
+//#include "gist1m.hpp"
 using namespace husky::losha;
 E2LSHFactory<ItemIdType, ItemElementType> factory;
 std::once_flag factory_flag;
@@ -55,9 +58,13 @@ void lsh() {
     auto& binaryInputFormat = 
         husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector);
 
-    // for sift1b
-    loshaengine<Query1B, Bucket1B, Item1B, QueryMsg, AnswerMsg>(
-        factory, setItemSIFT1B, binaryInputFormat);
+    //for sift10K
+    loshaengine<Query10K, Bucket10K, Item10K, QueryMsg, AnswerMsg>(
+            factory, setItemSIFT10K, binaryInputFormat);
+
+    //for sift1b
+//    loshaengine<Query1B, Bucket1B, Item1B, QueryMsg, AnswerMsg>(
+//        factory, setItemSIFT1B, binaryInputFormat);
 
     // for sift1m 
     // loshaengine<Query1M, Bucket1M, Item1M, QueryMsg, AnswerMsg>(
