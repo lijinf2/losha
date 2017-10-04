@@ -77,12 +77,17 @@ public:
             std::string result;
             result += std::to_string(queryId) + " ";
             result += std::to_string(this->getItemId()) + " " + std::to_string(distance) + "\n";
-            husky::io::HDFS::Write(
-                husky::Context::get_param("hdfs_namenode"),
-                husky::Context::get_param("hdfs_namenode_port"),
-                result,
-                husky::Context::get_param("outputPath"),
-                husky::Context::get_global_tid());
+            
+            if (husky::Context::get_param("outputPath") == "localhost"){
+                husky::LOG_I << "OUTPUT:" << result;
+            }else{
+                husky::io::HDFS::Write(
+                    husky::Context::get_param("hdfs_namenode"),
+                    husky::Context::get_param("hdfs_namenode_port"),
+                    result,
+                    husky::Context::get_param("outputPath"),
+                    husky::Context::get_global_tid());
+            }
         }
     }
 };

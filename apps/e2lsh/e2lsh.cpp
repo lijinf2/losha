@@ -71,11 +71,11 @@ void lsh() {
                      <<  std::to_string( d_query.count() / 1000.0)
                      << " seconds" << std::endl;
     if(husky::Context::get_global_tid() == 0) 
-        husky::LOG_I << "finish plsh" << std::endl;
+        husky::LOG_I << "E2LSH finish" << std::endl;
 }
 
 int main(int argc, char ** argv) {
-    husky::LOG_I << "program starts" << std::endl;
+    husky::LOG_I << "E2LSH program starts" << std::endl;
     std::vector<std::string> args;
     args.push_back("hdfs_namenode");
     args.push_back("hdfs_namenode_port");

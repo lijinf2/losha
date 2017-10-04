@@ -12,4 +12,4 @@ In each line (DV: value in that dimension):
 
 ## In .bin
 
-Each chunk contains 6 integer, the first is the ID, them folling 5 DV.
+Each chunk contains 6 integer, the first is the ID, then following 5 DV.
