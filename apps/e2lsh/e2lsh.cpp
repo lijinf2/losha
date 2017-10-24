@@ -24,11 +24,12 @@
 #include "lshcore/lshengine.hpp"
 #include "lshcore/e2lshfactory.hpp"
 
-// for sift1b
-#include "sift1b.hpp"
+// for small dataset (binary file)
+//#include "small_binary.hpp"
 
-// for gist1m
-#include "gist1m.hpp"
+// for small dataset (txt file)
+#include "small.hpp"
+
 using namespace husky::losha;
 E2LSHFactory<ItemIdType, ItemElementType> factory;
 std::once_flag factory_flag;
@@ -52,16 +53,16 @@ void lsh() {
             << std::to_string(d_init.count() / 1000.0) 
             << " seconds" << std::endl;
 
-    auto& binaryInputFormat = 
-        husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector);
-
-    // for sift1b
+    // Small Dataset (txt file)
+    auto& lineInputFormat = husky::io::InputFormatStore::create_line_inputformat();        
     loshaengine<Query1B, Bucket1B, Item1B, QueryMsg, AnswerMsg>(
-        factory, setItemSIFT1B, binaryInputFormat);
+        factory, setItemSMALL, lineInputFormat);
 
-    // for sift1m 
-    // loshaengine<Query1M, Bucket1M, Item1M, QueryMsg, AnswerMsg>(
-    //     factory, setItemSIFT1M, binaryInputFormat);
+    // Small Dataset (binary file)
+    //auto& binaryInputFormat = 
+    //    husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector); 
+    //loshaengine<Query1B, Bucket1B, Item1B, QueryMsg, AnswerMsg>(
+    //    factory, setItemSmallBinary, binaryInputFormat);
 
     auto query_f = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> d_query = query_f - init_f;
@@ -70,20 +71,20 @@ void lsh() {
                      <<  std::to_string( d_query.count() / 1000.0)
                      << " seconds" << std::endl;
     if(husky::Context::get_global_tid() == 0) 
-        husky::LOG_I << "finish plsh" << std::endl;
+        husky::LOG_I << "E2LSH finish" << std::endl;
 }
 
 int main(int argc, char ** argv) {
-    husky::LOG_I << "program starts" << std::endl;
+    husky::LOG_I << "E2LSH program starts" << std::endl;
     std::vector<std::string> args;
     args.push_back("hdfs_namenode");
     args.push_back("hdfs_namenode_port");
     args.push_back("band");
     args.push_back("row");
     args.push_back("dimension");
-    args.push_back("queryPath"); // the inputPath
-    args.push_back("itemPath"); // the outputPath
-    args.push_back("outputPath"); // the inputPath
+    args.push_back("queryPath"); // the inputQueryPath
+    args.push_back("itemPath"); // the inputItemPath
+    args.push_back("outputPath"); // the outputPath
     args.push_back("W");
     if (husky::init_with_args(argc, argv, args)) {
         husky::run_job(lsh);
