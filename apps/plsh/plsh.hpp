@@ -52,7 +52,7 @@ public:
 
         	float distance = factory.calDist(queryVector, this->getItemVector());
 
-        	if(distance <= 0.9) {
+        	if( distance <= std::stof( husky::Context::get_param("radians") ) ) {
         		std::string result;
         		result += std::to_string( queryId ) + " ";
         		result += std::to_string( this->getItemId() ) + " " + std::to_string(distance) + "\n";

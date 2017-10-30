@@ -64,8 +64,19 @@ public:
                 a[j] = distribution(generator);
             }
             normalize(a);
-            CosLSHFunction<ItemIdType, ItemElementType> func(a);
 
+            // DEBUG BEGIN
+            // print out the hash function
+            //std::string hash_function_string = "";
+            //for ( int j = 0; j < this->_dimension; ++j){
+            //    hash_function_string += ( std::to_string(a[j]) + " " );
+            //}
+            //husky::LOG_I << "Hash index: " << i;
+            //husky::LOG_I << "Hash detail: " << hash_function_string; 
+            // DEBUG END
+
+            CosLSHFunction<ItemIdType, ItemElementType> func(a);
+            
             // can be improved by swap
             _hashFunctions[i] = func;
         }
@@ -91,7 +102,7 @@ public:
                 ++itemIt; ++qIt;
             }
         }
-        
+
         if(cosTheta > 1){
             assert(cosTheta - 1 < 0.001);
             cosTheta = 1.0;
@@ -126,52 +137,56 @@ public:
 
         vector<bool> allSignatures = this->calSignaturesInBool(itemVector);
 
-        int sizeOfRow = std::ceil(this->_row / 32.0);
+        // This value is the same as _setBand
+        int numOfSignatures = this->_band * (this->_band - 1) / 2;
+        // This value is the same as _setRow
+        int lengthOfBooleanSignature = this->_row * 2;
 
+        int sizeOfRow = std::ceil( lengthOfBooleanSignature / 32.0 ); 
         vector< vector<int> > signatureInBands;
-        signatureInBands.resize(this->_band);
+        signatureInBands.resize( numOfSignatures );
         for (int i = 0 ; i < signatureInBands.size(); ++i) {
             for (int j = 0; j < sizeOfRow; ++j) {
-                // signatureInBands[i].resize(sizeOfRow );
                 signatureInBands[i].push_back(0);
             }
         }
-        // for (auto& v : signatureInBands) {
-        //     v.resize(sizeOfRow );
-        // }
-
-        // std::bitset< 32 > oneInt; //default is 0
-
-        // vector<int> vec;
+        
         int vecIndex;
         int bitSetIndex;
         int intValue;
 
-        for(int i = 0; i < this->_band; ++i) {
-            // vec.resize(sizeOfVec);
+        for(int i = 0; i < numOfSignatures; ++i) {
 
-            int start = i * this->_row;
+            int start = i * lengthOfBooleanSignature;
             vecIndex = 0;
             bitSetIndex = 0;
             intValue = 0;
 
             //compress bool vector into int vector
-            //may have problem since his is not unsigned int
-            for(int j = 0; j < this->_row; ++j) {
+            //may have problem since this is not unsigned int
+            for(int j = 0; j < lengthOfBooleanSignature; ++j) {
                 if(bitSetIndex < 32){
-                    // oneInt.set(bitSetIndex++, allSignatures[start + j]);
                     intValue = (intValue << 1) + allSignatures[start + j];
                     bitSetIndex++;
                 }else{
-                    // vec[vecIndex++] = static_cast<int>( oneInt.to_ullong() );
                     signatureInBands[i][vecIndex++] = intValue;
-                    bitSetIndex = 0;
+                    intValue = 0;
+                    intValue = (intValue << 1) + allSignatures[start + j];
+                    bitSetIndex = 1;
                 }
             }
-            if(bitSetIndex != 0)
-                    signatureInBands[i][vecIndex++] = intValue;
+            if(bitSetIndex != 0){
+                signatureInBands[i][vecIndex++] = intValue;
+            }
 
-            // signatureInBands[i] = std::move(vec);
+            // Debug BEGIN
+            //std::string int_string = "";
+            //for (int j = 0; j < signatureInBands[i].size(); ++j){
+            //    int_string += std::to_string(signatureInBands[i][j]) + " ";
+            //}
+            //husky::LOG_I << "signature #: " << i << ", detail: " << int_string;
+            // Debug END
+
         }
         return signatureInBands;
     }
