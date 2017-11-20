@@ -1,3 +1,4 @@
+add_subdirectory(simhash)
 add_subdirectory(plsh)
 add_subdirectory(e2lsh)
 add_subdirectory(hammingrank)
