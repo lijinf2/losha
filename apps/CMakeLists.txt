@@ -1,5 +1,6 @@
 add_subdirectory(plsh)
 add_subdirectory(e2lsh)
+add_subdirectory(e2lsh_ir)
 add_subdirectory(hammingrank)
 # add_subdirectory(srs)
 # add_subdirectory(iterative-coslsh)
