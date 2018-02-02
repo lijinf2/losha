@@ -39,6 +39,7 @@ public:
 
     // require by Husky object
     explicit LSHItem(const typename LSHItem::KeyT& id) : DenseVector<ItemIdType, ItemElementType>(id) {};
+    LSHItem() : DenseVector<ItemIdType, ItemElementType>() {}
 
     inline void sendToQuery(const ItemIdType& qId, const AnswerMsg& msg) {
         item_msg_buffer.push_back(std::make_pair(qId, msg));

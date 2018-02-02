@@ -58,6 +58,7 @@ class E2LSHItem : public LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMs
 public:
     // explicit E2LSHItem(const typename E2LSHItem::KeyT& id):LSHItem(id){}
     explicit E2LSHItem(const typename E2LSHItem::KeyT& id):LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(id){}
+    E2LSHItem() : LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>() {}
 
     virtual void answer(
         LSHFactory<ItemIdType, ItemElementType>& factory,
