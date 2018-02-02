@@ -76,6 +76,15 @@ In the distributed environment, use the following to execute workers on all mach
     $ cp $losha/conf/exec.sh .
     $ ./exec.sh <executable> --conf /path/to/your/conf
 
+## Dataset Preparation
+LoSHa accepts FVECS as data formats. Please refer to https://github.com/lijinf2/gqr/tree/master/script for dataset transformations. Specifically, user may follow three steps:
+
+- Transform dataset into FVECS format.
+- Use sample_queries.sh to sample a certain amount of queries.
+- Use cal_groundtruth.sh to obtain groundtruth.
+
+Specific parameters should be provided to generate the correct datasets.
+
 License
 ---------------
 
