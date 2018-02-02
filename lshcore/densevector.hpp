@@ -78,13 +78,13 @@ public:
         return *this;
     }
 
-    friend husky::BinStream & operator<<(husky::BinStream & stream, DenseVector<ItemIdType, ItemElementType>& p) {
-        stream << p.itemId << p.itemVector;
+    husky::BinStream& serialize(husky::BinStream& stream) const {
+        stream << _itemId << _itemVector;
         return stream;
     }
 
-    friend husky::BinStream & operator>>(husky::BinStream & stream, DenseVector<ItemIdType, ItemElementType>& p) {
-        stream >> p.itemId >> p.itemVector;
+    husky::BinStream& deserialize(husky::BinStream& stream) {
+        stream >> _itemId >> _itemVector;
         return stream;
     }
 
