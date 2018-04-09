@@ -1,4 +1,4 @@
-# Losha Losha is a framework focusing on Distributed Similarity Search
+# Losha is a framework focusing on Distributed Similarity Search
 
 ## Apps
   - simhash
