@@ -53,6 +53,9 @@ public:
     //     this->initialize(bands, rows, W, dimension, seed);
     // }
 
+    void loadGQRModel() {
+    }
+
     void initialize(int bands, int rows, int dimension, float w, int seed = 0) {
         this->_band = bands;
         this->_row = rows;

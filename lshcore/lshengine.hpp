@@ -119,6 +119,10 @@ void loadItems(
 
     if (husky::Context::get_global_tid() == 0) 
         husky::LOG_I << "(in loadItems) finish: load items" << std::endl;
+
+
+    // calculate number of buckets in each table
+    statNumBuckets(bucket_list);
     return;
 }
 

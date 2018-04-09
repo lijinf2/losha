@@ -1,19 +1,3 @@
-/*
- * Copyright 2016 Husky Team
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #pragma once
 #include <set>
 #include <string>
@@ -79,16 +63,13 @@ public:
             result += std::to_string(queryId) + " ";
             result += std::to_string(this->getItemId()) + " " + std::to_string(distance) + "\n";
             
-            if (husky::Context::get_param("outputPath") == "localhost"){
-                husky::LOG_I << "OUTPUT:" << result;
-            }else{
-                husky::io::HDFS::Write(
-                    husky::Context::get_param("hdfs_namenode"),
-                    husky::Context::get_param("hdfs_namenode_port"),
-                    result,
-                    husky::Context::get_param("outputPath"),
-                    husky::Context::get_global_tid());
-            }
+            // output to hdfs
+            husky::io::HDFS::Write(
+                husky::Context::get_param("hdfs_namenode"),
+                husky::Context::get_param("hdfs_namenode_port"),
+                result,
+                husky::Context::get_param("outputPath"),
+                husky::Context::get_global_tid());
         }
     }
 };
@@ -104,3 +85,5 @@ public:
     // explicit E2LSHBucket(const typename E2LSHBucket::KeyT& bId):LSHBucket(bId){}
     explicit E2LSHBucket(const typename E2LSHBucket::KeyT& bId):LSHBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(bId){}
 };
+
+
