@@ -32,7 +32,7 @@ template<typename ItemIdType, typename ItemElementType,
 class LSHBucket {
     public:
         using KeyT = std::vector<int>;
-        KeyT bucketId_;
+        KeyT bucketId_; // (sig, table), the last integer represents table, starting from 0
         std::vector<ItemIdType> itemIds_;
 
         explicit LSHBucket(const typename LSHBucket::KeyT& bId): bucketId_(bId) {}
@@ -48,6 +48,17 @@ class LSHBucket {
         virtual void forward(LSHFactory<ItemIdType, ItemElementType>& factory) {
         }
 
+        unsigned getNumItems() {
+            return itemIds_.size();
+        }
+        
+        unsigned getTable() {
+            return bucketId_.back();
+        }
+
+        const vector<int> getId() {
+            return this->bucketId_;
+        }
         // std::string toString() {
         //     std::string str = "(bucketId_: " + std::to_string(bucketId_) + " -> ";
         //     str += std::to_string(this->itemIds_);

@@ -1,0 +1,52 @@
+#pragma once
+#include <iostream>
+#include <utility>
+#include "core/engine.hpp"
+#include "lib/aggregator_factory.hpp"
+
+#include "lshcore/lshfactory.hpp"
+
+namespace husky {
+namespace losha {
+
+template<typename BucketType, typename ItemIdType, typename ItemElementType>
+void statTableSizes(
+    husky::ObjList<BucketType>& bucket_list,
+    LSHFactory<ItemIdType, ItemElementType>& factory) {
+
+    // aggregator
+    int band = factory.getBand();
+    husky::lib::Aggregator<vector<unsigned>> num_buckets_agg(vector<unsigned>(band), 
+        [](vector<unsigned>& a, const vector<unsigned>& b){
+            for (int i = 0; i < a.size(); ++i) {
+                a[i] += b[i];
+            }
+        },
+        [band](vector<unsigned>& v) {
+            v = std::move(vector<unsigned>(band, 0));
+        }
+    );
+
+    auto update_func = [](vector<unsigned>& collector, unsigned tableId) {
+        collector[tableId]++;;
+    };
+
+    husky::list_execute(bucket_list,
+        [&num_buckets_agg, &update_func](BucketType& bucket) {
+        num_buckets_agg.update(
+            update_func,
+            bucket.getTable());
+    });
+
+    husky::lib::AggregatorFactory::sync();
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "report sizes of every table in (table Idx, numBuckets)" << std::endl;
+        const auto& tableSizes = num_buckets_agg.get_value();
+        for (int i = 0; i < tableSizes.size(); ++i) {
+            husky::LOG_I << "table " << i << " has " << tableSizes[i] << " buckets" << std::endl;
+        }
+        husky::LOG_I << std::endl;
+    }
+}
+}
+}

@@ -28,6 +28,7 @@
 #include "lshbucket.hpp"
 #include "lshitem.hpp"
 #include "lshquery.hpp"
+#include "lshstat.hpp"
 
 using std::vector;
 using std::string;
@@ -122,7 +123,7 @@ void loadItems(
 
 
     // calculate number of buckets in each table
-    statNumBuckets(bucket_list);
+    statTableSizes(bucket_list, factory);
     return;
 }
 
