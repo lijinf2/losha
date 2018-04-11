@@ -1,8 +1,8 @@
 # only supports lines of triplets in the format of (srcId, dstId, dist)
 
 # mkdir tmp
-# rm -rf tmp/output.txt
-# hadoop dfs -cat /losha/output/* > tmp/output.txt
+rm -rf tmp/output.txt
+hadoop dfs -cat /losha/output/* > tmp/output.txt
 
 lshbox_file="../gqr/data/audio/audio_groundtruth.lshbox"
 triplets_file="tmp/output.txt"

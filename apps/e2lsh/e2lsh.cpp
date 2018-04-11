@@ -8,8 +8,9 @@
 #include "lshcore/lshengine.hpp"
 #include "lshcore/e2lshfactory.hpp"
 #include "lshcore/loader/loader.h"
-
 #include "e2lsh.hpp"
+using namespace husky::losha;
+
 typedef int ItemIdType;
 typedef float ItemElementType;
 typedef ItemIdType QueryMsg;
@@ -17,7 +18,6 @@ typedef std::pair<ItemIdType, ItemElementType> AnswerMsg;
 typedef E2LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Query;
 typedef E2LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Item;
 typedef E2LSHBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Bucket;
-using namespace husky::losha;
 E2LSHFactory<ItemIdType, ItemElementType> factory;
 std::once_flag factory_flag;
 
@@ -33,14 +33,11 @@ void lsh() {
     });
 
     int BytesPerVector = dimension * 4 + 8;
-    auto& binaryInputFormat = 
-       husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector); 
-    loshaengine<Query, Bucket, Item, QueryMsg, AnswerMsg>(
-       factory, parseIdFvecs, binaryInputFormat);
+    auto& binaryInputFormat = husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector); 
+    loshaengine<Query, Bucket, Item, QueryMsg, AnswerMsg>(factory, parseIdFvecs, binaryInputFormat);
 }
 
 int main(int argc, char ** argv) {
-    husky::LOG_I << "E2LSH program starts" << std::endl;
     std::vector<std::string> args;
     args.push_back("hdfs_namenode");
     args.push_back("hdfs_namenode_port");
@@ -57,4 +54,3 @@ int main(int argc, char ** argv) {
     }
     return 1;
 }
-
