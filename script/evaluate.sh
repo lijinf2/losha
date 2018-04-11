@@ -9,7 +9,7 @@ triplets_file="tmp/output.txt"
 
 binary_file="tmp/evaluate_triplets"
 if [ ! -f $binary_file ]; then
-    g++ --std=c++11 -I ../gqr -I ../gqr/include  -g src/evaluate_triplets.cpp -o $binary_file 2>&1 | tee log.txt
+    g++ --std=c++11 -I ../gqr -I ../gqr/include  -O333 src/evaluate_triplets.cpp -o $binary_file 2>&1 | tee log.txt
 fi
 
-gdb --args tmp/evaluate_triplets $lshbox_file $triplets_file
+tmp/evaluate_triplets $lshbox_file $triplets_file
