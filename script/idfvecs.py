@@ -3,7 +3,7 @@
 
 dataset = "audio_base"
 fvecs_file = "../gqr/data/audio/" + dataset + ".fvecs"
-output_file = dataset + ".idfvecs"
+output_file = "tmp/" + dataset + ".idfvecs"
 
 import struct
 fout = open(output_file, "wb")
