@@ -1,0 +1,5 @@
+build
+script/raw_data
+script/output
+script/simhash_output
+script/*.txt
