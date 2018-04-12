@@ -24,6 +24,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -w")
 endif()
 
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/gqr/include)
+
 # dependencies on husky
 add_subdirectory(husky)
 add_definitions(${HUSKY_EXTERNAL_DEFINITION})
