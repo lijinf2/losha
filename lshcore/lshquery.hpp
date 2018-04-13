@@ -51,8 +51,15 @@ class LSHQuery: public DenseVector<ItemIdType, ItemElementType> {
             return this->getItem();
         }
 
-        inline void sendToBucket(std::vector<int>& bId) {
+        // bId must contain table Idx as the last element
+        inline void sendToBucket(const std::vector<int>& bId) {
             query_msg_buffer.push_back(bId);
+        }
+
+        // sig cannot contain table Idx
+        inline void sendToBucket(std::vector<int> sig, int tableIdx) {
+            sig.push_back(tableIdx);
+            query_msg_buffer.push_back(sig);
         }
 
         virtual void query(

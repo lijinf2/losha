@@ -1,0 +1,30 @@
+#pragma once
+#include<string>
+#include<utility>
+#include "core/engine.hpp"
+#include "io/hdfs_manager.hpp"
+
+using std::string;
+using std::pair;
+namespace husky {
+namespace losha {
+
+void writeHDFS(const string& text, const string& namenodeKey, const string& portKey, const string& outputPathKey) {
+    husky::io::HDFS::Write(
+        husky::Context::get_param(namenodeKey),
+        husky::Context::get_param(portKey),
+        text,
+        husky::Context::get_param(outputPathKey),
+        husky::Context::get_global_tid());
+}
+
+template<typename ItemIdType>
+void writeHDFSTriplet(
+    const ItemIdType& queryId, const ItemIdType& itemId, float distance,
+    const string& namenodeKey, const string& portKey, const string& outputPathKey) {
+    string text = std::to_string(queryId) + " ";
+    text += std::to_string(itemId) + " " + std::to_string(distance) + "\n";
+    writeHDFS(text, namenodeKey, portKey, outputPathKey);
+}
+}
+}

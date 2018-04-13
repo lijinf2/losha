@@ -6,6 +6,7 @@
 #include "core/engine.hpp"
 #include "io/hdfs_manager.hpp"
 
+#include "losha/common/writer.hpp"
 #include "lshcore/lshbucket.hpp"
 #include "lshcore/lshquery.hpp"
 #include "lshcore/lshitem.hpp"
@@ -41,13 +42,7 @@ public:
             const auto& queryVector = factory.getQueryVector(queryId);
             float distance = factory.calDist(queryVector, this->getItemVector());
 
-            std::string result = std::to_string(queryId) + " ";
-            result += std::to_string(this->getItemId()) + " " + std::to_string(distance) + "\n";
-            
-            husky::io::HDFS::Write(
-                husky::Context::get_param("hdfs_namenode"), husky::Context::get_param("hdfs_namenode_port"),
-                result,
-                husky::Context::get_param("outputPath"), husky::Context::get_global_tid());
+            writeHDFSTriplet(queryId, this->getItemId(), distance, "hdfs_namenode", "hdfs_namenode_port", "outputPath");
         }
     }
 };

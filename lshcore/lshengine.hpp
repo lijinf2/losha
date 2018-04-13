@@ -347,7 +347,7 @@ void loshaengine(
         if (husky::Context::get_global_tid() == 0) 
             husky::LOG_I << "finish iteration: "
                 << std::to_string(iter) 
-                << " in " + std::to_string(d_iteration.count() / 1000.0) + " seconds" << std::endl;
+                << " in " + std::to_string(d_iteration.count() / 1000.0) + " seconds" << std::endl << std::endl;
 
         // report accumulated time
         accumualteIterationTime += d_iteration.count() / 1000.0;
