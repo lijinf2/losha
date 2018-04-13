@@ -33,8 +33,10 @@ void lsh() {
     });
 
     int BytesPerVector = dimension * 4 + 8;
+    std::string itemPath = husky::Context::get_param("itemPath");
+    std::string queryPath = husky::Context::get_param("queryPath");
     auto& binaryInputFormat = husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector); 
-    loshaengine<Query, Bucket, Item, QueryMsg, AnswerMsg>(factory, parseIdFvecs, binaryInputFormat);
+    loshaengine<Query, Bucket, Item, QueryMsg, AnswerMsg>(factory, parseIdFvecs, binaryInputFormat, itemPath, queryPath);
 }
 
 int main(int argc, char ** argv) {

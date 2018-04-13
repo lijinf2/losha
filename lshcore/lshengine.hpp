@@ -231,7 +231,11 @@ template<
 void loshaengine(
     LSHFactory<ItemIdType, ItemElementType>& factory,
     void (*setItem)(boost::string_ref&, ItemIdType& itemId, vector<ItemElementType>&),
-    InputFormat& infmt, bool isQueryMode = true) {
+    InputFormat& infmt, 
+    std::string itemPath,
+    std::string queryPath,
+    int ITERATION = 1,
+    bool isQueryMode = true) {
 
     if (husky::Context::get_global_tid() == 0) 
         husky::LOG_I << "start: similar items search for queries in batches\n\n" << std::endl;
@@ -241,12 +245,12 @@ void loshaengine(
     auto & item_list =
         husky::ObjListStore::create_objlist<ItemType>();
     auto & bucket_list = husky::ObjListStore::create_objlist<BucketType>();
-    infmt.set_input(husky::Context::get_param("itemPath"));
+    infmt.set_input(itemPath);
     loadItems(factory, bucket_list, item_list, setItem, infmt);
 
     auto & query_list =
         husky::ObjListStore::create_objlist<QueryType>();
-    infmt.set_input(husky::Context::get_param("queryPath"));
+    infmt.set_input(queryPath);
     loadQueries(factory, query_list, setItem, infmt);
 
     // end of debug
@@ -254,11 +258,6 @@ void loshaengine(
 
     if (husky::Context::get_global_tid() == 0) 
         husky::LOG_I << "\n\nstart: similar items search for queries in batches" << std::endl;
-
-    // ITERATION
-    int ITERATION = 1;
-    if(husky::Context::get_param("iters") != "") 
-       ITERATION =  std::stoi(husky::Context::get_param("iters"));
 
     // define three channels
     auto& query2BucketCH = 
