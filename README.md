@@ -19,10 +19,9 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
     $ mkdir build
     $ cd build
     $ cmake -DCMAKE_BUILD_TYPE=Release ..  
-    $ make help                      # List all build target
-    $ make -j{N} Master
-    $ make -j{N} $ApplicationName    # Build any Losha application
-
+    $ make help                     
+    $ make -j4 Master
+    $ make -j4 e2lsh 
 ## Configuration
 Configuration files should be provided for different applications to fit the user's specific requirments and parameter for nearest neighbor search. An example file for configuration is provided as follows:
 
