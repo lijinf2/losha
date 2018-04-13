@@ -9,9 +9,11 @@
   - GQR (https://github.com/lijinf2/gqr)
   - Husky (https://github.com/husky-team/husky)
 
-## Build
+## Build and Run
 
 We assume you have set up a NFS director (denoeted as /data) that every machine can access it. 
+
+### Make runnable binary
 
     $ cd /data
     $ git clone --recursive https://github.com/lijinf2/losha.git
@@ -22,6 +24,31 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
     $ make help                     
     $ make -j4 Master
     $ make -j4 e2lsh 
+
+### Prepare dataset and groundtruth
+    $ cd ../script
+    $ python idfvecs.py
+    $ hadoop dfs -mkdir /losha /losha/audio
+    $ hadoop dfs -Ddfs.blocksize=8388608 -put audio_base.idfvecs /losha/audio
+    $ hadoop dfs -Ddfs.blocksize=8388608 -put audio_query.idfvecs /losha/audio
+    $ cd ../gqr/ && mkdir build && cd ./script
+    $ sh cal_groundtruth.sh
+
+### Run in single machine (assume the hostname is master)
+    $ cd ../../script
+    $ ../build/husky/Master --conf ../conf/e2lsh.conf
+    $ ../build/e2lsh --conf ../conf/e2lsh.conf
+    $ sh evaluate.sh
+
+### Run in multiple machines (assume 2 worker machines, with hostnames as worker1 and worker2)
+    $ ../build/husky/Master --conf ../conf/e2lsh-slaves.conf
+    $ ./exec.sh ../build/e2lsh --conf ../conf/e2lsh-slaves.conf
+    $ sh evaluate.sh
+
+## Tips
+    $ if you change the root directory (i.e. /data/losha) to other position, please change shell scripts correspondingly
+    $ remove outputfile on HDFS, otherwise the old results will co-exist with the new results
+
 ## Configuration
 Configuration files should be provided for different applications to fit the user's specific requirments and parameter for nearest neighbor search. An example file for configuration is provided as follows:
 
@@ -47,60 +74,3 @@ Configuration files should be provided for different applications to fit the use
     # Session for worker information
     [worker]
     info=master:3
-
-
-For single-machine environment, use the hostname of the machine as both the master and the (only) worker.
-
-For distributed environment, first copy and modify `$Losha_ROOT/scripts/exec.sh` according to actual configuration. `scripts/exec.sh` depends on `pssh`. An example of exec.sh is provided as follows:
-
-    # Parameter
-    BIN_DIR=zzzz
-    CONF_DIR=zzzz
-    MACHINE_CFG="$CONF_DIR/slaves"
-    
-    echo time pssh -t 0 -P -h ${MACHINE_CFG} -x "-t -t" "cd $CONF_DIR && ls -al > /dev/null && cd $BIN_DIR && ls -al > /dev/null && ./$@"
-    time pssh -t 0 -P -h ${MACHINE_CFG} -x "-t -t" "cd $CONF_DIR && ls -al > /dev/null && cd $BIN_DIR && ls -al > /dev/null && ./$@"
-
-where slaves is a file that provides the worker machine ID.
-
-
-## Run a Losha Program
-
-First make sure that the master is running. Use the following to start the master
-
-    $ ./Master --conf /path/to/your/conf
-
-In the single-machine environment, use the following,
-
-    $ ./<executable> --conf /path/to/your/conf
-
-In the distributed environment, use the following to execute workers on all machines,
-
-    $ cp $losha/conf/exec.sh .
-    $ ./exec.sh <executable> --conf /path/to/your/conf
-
-## Dataset Preparation
-LoSHa accepts FVECS as data formats. Please refer to https://github.com/lijinf2/gqr/tree/master/script for dataset transformations. Specifically, user may follow three steps:
-
-- Transform dataset into FVECS format.
-- Use sample_queries.sh to sample a certain amount of queries.
-- Use cal_groundtruth.sh to obtain groundtruth.
-
-Specific parameters should be provided to generate the correct datasets.
-
-License
----------------
-
-Copyright 2016-2017 Husky Team
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
