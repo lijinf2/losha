@@ -46,31 +46,6 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
     $ sh evaluate.sh
 
 ## Tips
-    $ if you change the root directory (i.e. /data/losha) to other position, please change shell scripts correspondingly
-    $ remove outputfile on HDFS, otherwise the old results will co-exist with the new results
-
-## Configuration
-Configuration files should be provided for different applications to fit the user's specific requirments and parameter for nearest neighbor search. An example file for configuration is provided as follows:
-
-    # Required
-    master_host=xxx.xxx.xxx.xxx
-    master_port=yyyyy
-    comm_port=yyyyy
-
-    # Data management
-    outputPath=zzzz
-    itemPath=zzzz
-    queryPath=zzzz
-
-    # Optional Cluster Config
-    hdfs_namenode=xxx.xxx.xxx.xxx
-    hdfs_namenode_port=yyyyy
-
-    # For Master
-    serve=1
-    hostname=localhost
-    port=2016
-
-    # Session for worker information
-    [worker]
-    info=master:3
+    $ We have tried our best to simplify the deployment. But since it is not easy to run a distributed application, we suggest users to try a GQR application and a Husky application before using LoSHa. 
+    $ If you change the root directory (i.e. /data/losha) to other position, please change shell scripts correspondingly
+    $ Remove outputfile on HDFS, otherwise the old results will co-exist with the new results
