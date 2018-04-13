@@ -3,15 +3,19 @@
 ## Apps
   - simhash
   - e2lsh
+  - gqr + pca hashing
+
+## Dependency
+  - GQR (https://github.com/lijinf2/gqr)
+  - Husky (https://github.com/husky-team/husky)
 
 ## Build
-Download the source code of losha:
 
-    git clone --recursive https://github.com/lijinf2/losha.git
+We assume you have set up a NFS director (denoeted as /data) that every machine can access it. 
 
-We assume the root directory of Losha is `$Losha`.
-
-    $ cd $Losha
+    $ cd /data
+    $ git clone --recursive https://github.com/lijinf2/losha.git
+    $ cd losha
     $ mkdir build
     $ cd build
     $ cmake -DCMAKE_BUILD_TYPE=Release ..  
