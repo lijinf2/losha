@@ -26,5 +26,19 @@ void writeHDFSTriplet(
     text += std::to_string(itemId) + " " + std::to_string(distance) + "\n";
     writeHDFS(text, namenodeKey, portKey, outputPathKey);
 }
+
+template<typename ItemIdType, typename DistType>
+void writeHDFSTriplet(
+    const ItemIdType& queryId, const std::pair<ItemIdType, DistType>& pair, 
+    const string& namenodeKey, const string& portKey, const string& outputPathKey) {
+    writeHDFSTriplet(queryId, pair.first, pair.second, namenodeKey, portKey, outputPathKey);
+}
+
+template<typename ItemIdType, typename DistType>
+void writeHDFSTriplet(
+    const ItemIdType& queryId, const std::pair<DistType, ItemIdType>& pair, 
+    const string& namenodeKey, const string& portKey, const string& outputPathKey) {
+    writeHDFSTriplet(queryId, pair.second, pair.first, namenodeKey, portKey, outputPathKey);
+}
 }
 }
