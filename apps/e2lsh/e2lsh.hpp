@@ -38,7 +38,7 @@ public:
             if (evaluated.find(queryId)!= evaluated.end()) continue;
             evaluated.insert(queryId);
 
-            auto& queryVector = factory.getQueryVector(queryId);
+            const auto& queryVector = factory.getQueryVector(queryId);
             float distance = factory.calDist(queryVector, this->getItemVector());
 
             std::string result = std::to_string(queryId) + " ";

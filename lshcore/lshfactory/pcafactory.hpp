@@ -48,7 +48,7 @@ public:
     // in the format of std::vector< std::vector<int> >
     std::vector< std::vector<int> > calSigs (
         // const DenseVector<ItemIdType, ItemElementType> &p) override {
-        const vector<ItemElementType> &itemVector) override {
+        const vector<ItemElementType> &itemVector) const override {
 
         std::vector< std::vector<int> > signatureInBands;
         signatureInBands.reserve(this->getBand());
@@ -62,8 +62,7 @@ public:
     // return projections of each band
     // in the format of std::vector< std::vector<float> >
     virtual std::vector< std::vector<float> > calProjs(
-        const DenseVector<ItemIdType, ItemElementType> &p) {
-        const auto& itemVector = p.getItemVector();
+        const vector<ItemElementType> &itemVector) const override {
 
         std::vector< std::vector<float> > projectionsInBands;
         projectionsInBands.reserve(this->getBand());
@@ -76,7 +75,7 @@ public:
 
     virtual float calDist(
             const std::vector<ItemElementType> & queryVector,
-            const std::vector<ItemElementType> & itemVector) override {
+            const std::vector<ItemElementType> & itemVector) const override {
         return calE2Dist(queryVector, itemVector);
     }
 

@@ -21,6 +21,7 @@
 #include <sstream>
 #include <cmath>
 
+#include "base/log.hpp"
 #include "gqr/include/base/basehasher.h"
 using namespace lshbox;
 using std::vector;
@@ -45,9 +46,9 @@ public:
 
     void loadModel(const string& modelFile, const string& uselessParameter = "") override; 
 
-    virtual vector<float> getHashFloats(unsigned k, const DATATYPE *domin);
+    virtual vector<float> getHashFloats(unsigned k, const DATATYPE *domin) const ;
 
-    vector<int> getBuckets(unsigned k, const DATATYPE *domin);
+    vector<int> getBuckets(unsigned k, const DATATYPE *domin) const ;
 
     unsigned getBand() const {
         return pcsAll.size();
@@ -69,7 +70,7 @@ void PCAHasher<DATATYPE>::loadModel(const string& modelFile, const string& usele
     // initialized statistics and model
     ifstream modelFin(modelFile.c_str());
     if (!modelFin) {
-        std::cout << "cannot open file " << modelFile << std::endl;
+        husky::LOG_I << "cannot open file " << modelFile << std::endl;
         assert(false);
     }
     getline(modelFin, line);
@@ -90,25 +91,30 @@ void PCAHasher<DATATYPE>::loadModel(const string& modelFile, const string& usele
 
 
 template<typename DATATYPE>
-vector<float> PCAHasher<DATATYPE>::getHashFloats(unsigned tableIdx, const DATATYPE *data)
+vector<float> PCAHasher<DATATYPE>::getHashFloats(unsigned tableIdx, const DATATYPE *data) const
 {
     // project
     return this->getProjection(data, pcsAll[tableIdx], mean);
 }
 
 template<typename DATATYPE>
-vector<int> PCAHasher<DATATYPE>::getBuckets(unsigned tableIdx, const DATATYPE *data)
+vector<int> PCAHasher<DATATYPE>::getBuckets(unsigned tableIdx, const DATATYPE *data) const
 {
     vector<float> hashFloats = getHashFloats(tableIdx, data);
-
-    vector<int> hashVal(hashFloats.size());
-    for (int i = 0; i < hashVal.size(); ++i) {
-        if (hashFloats[i] >=0) 
-            hashVal[i] = 1;
-        else 
-            hashVal[i] = 0;
+    if (hashFloats.size() > 32) {
+        husky::LOG_I << "pcahasher supports maximum 32 bits, but this app uses " << hashFloats.size() << "bits" << std::endl;
+        assert(false);
     }
-    return hashVal;
+
+    int value = 0;
+    for (int i = 0; i < hashFloats.size(); ++i) {
+        value <<= 1;
+        if (hashFloats[i] >=0) 
+            value += 1;
+    }
+    vector<int> bucket;
+    bucket.push_back(value);
+    return bucket;
 }
 } // namespace losha
 } // namespace husky

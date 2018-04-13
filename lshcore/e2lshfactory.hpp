@@ -27,6 +27,7 @@
 #include "lshfactory.hpp"
 #include "lshutils.hpp"
 
+#include "losha/common/distor.hpp"
 namespace husky {
 namespace losha {
 
@@ -122,7 +123,7 @@ public:
     // return all signatures, as vector<int>
     // in the format of std::vector< int >
     std::vector<int> calSignatures(
-        const vector<ItemElementType>& p) {
+        const vector<ItemElementType>& p) const {
         std::vector<int> allSignatures;
         allSignatures.resize(this->hashFunctions.size());
 
@@ -137,7 +138,7 @@ public:
     // in the format of std::vector< std::vector<int> >
     std::vector< std::vector<int> > calSigs (
         // const DenseVector<ItemIdType, ItemElementType> &p) override {
-        const vector<ItemElementType> &itemVector) override {
+        const vector<ItemElementType> &itemVector) const override {
         std::vector<int> allSignatures = this->calSignatures(itemVector);
 
         std::vector< std::vector<int> > signatureInBands;
@@ -157,7 +158,7 @@ public:
     // return all projections
     // in the format of std::vector< float >
     std::vector<float> calProjections(
-        const DenseVector<ItemIdType, ItemElementType>& p) {
+        const vector<ItemElementType>& p) const {
         std::vector<float> allProjections;
         allProjections.resize(this->hashFunctions.size());
 
@@ -171,8 +172,8 @@ public:
     // return projections of each band
     // in the format of std::vector< std::vector<float> >
     virtual std::vector< std::vector<float> > calProjs(
-        const DenseVector<ItemIdType, ItemElementType> &p) {
-        std::vector<float> allProjections = this->calProjections(p);
+        const vector<ItemElementType> &itemVector) const override {
+        std::vector<float> allProjections = this->calProjections(itemVector);
 
         std::vector< std::vector<float> > projectionsInBands;
 
@@ -190,17 +191,9 @@ public:
 
     virtual float calDist(
             const std::vector<ItemElementType> & queryVector,
-            const std::vector<ItemElementType> & itemVector) override {
-        typename std::vector<ItemElementType>::const_iterator qIt = queryVector.begin();
+            const std::vector<ItemElementType> & itemVector) const override {
 
-        typename std::vector<ItemElementType>::const_iterator myIt = itemVector.begin();
-
-        float distance = 0;
-        while (myIt != itemVector.end() && qIt != queryVector.end()) {
-            distance += (*myIt - *qIt) * (*myIt - *qIt);
-            ++myIt; ++qIt;
-        }
-        return sqrt(distance);
+        return calE2Dist(queryVector, itemVector);
     }
 
     // for sparse vector

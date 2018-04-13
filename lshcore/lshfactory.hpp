@@ -22,13 +22,13 @@ public:
     // three most important virtual functions, calDist, oldCalSigs and calProjs
     virtual float calDist(
         const vector<ItemElementType> & query,
-        const vector<ItemElementType> & item) = 0;
+        const vector<ItemElementType> & item) const = 0;
 
     virtual vector< vector<int> > calSigs( 
-        const vector<ItemElementType> &itemVector) = 0;
+        const vector<ItemElementType> &itemVector) const = 0;
 
     virtual vector< vector<float> > calProjs(
-        const vector<ItemElementType> &itemVector) {
+        const vector<ItemElementType> &itemVector) const {
 
         // should return an error since it only belongs to E2LSH
         vector< vector<float> > zero;
@@ -38,39 +38,39 @@ public:
     // wrapper for DenseVector
     inline float calDist(
         const DenseVector<ItemIdType, ItemElementType> & query,
-        const DenseVector<ItemIdType, ItemElementType> & item) {
+        const DenseVector<ItemIdType, ItemElementType> & item) const {
         return calDist(query.getItemVector(), item.getItemVector() );
     }
 
     // wrapper for DenseVector
     inline float calDist(
         const vector<ItemElementType> & queryVector,
-        const DenseVector<ItemIdType, ItemElementType> & item) {
+        const DenseVector<ItemIdType, ItemElementType> & item) const {
         return calDist(queryVector, item.getItemVector() );
     }
 
     // wrapper for DenseVector
     inline float calDist(
         const DenseVector<ItemIdType, ItemElementType> & query,
-        vector<ItemElementType> & itemVector) {
+        vector<ItemElementType> & itemVector) const {
         return calDist(query.getItemVector(), itemVector );
     }
 
     // wrapper for DenseVector
-    inline float calSigs(
-        const DenseVector<ItemIdType, ItemElementType> & item) {
+    inline vector< vector<int> > calSigs(
+        const DenseVector<ItemIdType, ItemElementType> & item) const {
         return calSigs(item.getItemVector() );
     }
     
     // wrapper for DenseVector
-    inline float calProjs(
-        const DenseVector<ItemIdType, ItemElementType> & item) {
+    inline vector< vector<float> > calProjs(
+        const DenseVector<ItemIdType, ItemElementType> & item) const {
         return calProjs(item.getItemVector() );
     }
 
     // wrapper to add table index 
     // directly get buckets for an object
-    vector< vector<int> > calItemBuckets( const vector<ItemElementType>& itemVector) {
+    vector< vector<int> > calItemBuckets( const vector<ItemElementType>& itemVector) const {
         vector< vector<int> > sigInBands = this->calSigs(itemVector);
 
         vector< vector<int> >::iterator it = sigInBands.begin();
@@ -83,19 +83,19 @@ public:
 
     // wrapper for DenseVector
     vector< vector<int> > calItemBuckets(
-        const DenseVector<ItemIdType, ItemElementType>& p) {
+        const DenseVector<ItemIdType, ItemElementType>& p) const {
         return calItemBuckets(p.getItemVector());
     }
 
-    inline int getBand() {
+    inline int getBand() const {
         return _band;
     }
 
-    inline int getRow() {
+    inline int getRow() const {
         return _row;
     }
 
-    inline int getDimension() {
+    inline int getDimension() const {
         return _dimension;
     }
 
@@ -115,7 +115,7 @@ public:
         return _idToQueryVector[qid];
     }
 
-    const std::unordered_map<ItemIdType, std::vector<ItemElementType>>& getAllQueries() {
+    const std::unordered_map<ItemIdType, std::vector<ItemElementType>>& getAllQueries() const {
         return _idToQueryVector;
     }
     // handle aggregator variable

@@ -35,7 +35,7 @@ class E2LSHFunction {
             this->W = W;
         }
 
-        inline float dotProduct(const std::vector<ItemElementType>& v2) {
+        inline float dotProduct(const std::vector<ItemElementType>& v2) const {
             assert(this->a.size() == v2.size());
             float product = 0;
             for (int i = 0; i < this->a.size(); ++i) {
@@ -45,18 +45,18 @@ class E2LSHFunction {
         }
 
         inline float getProjection(
-                const std::vector<ItemElementType>& itemVector) {
+                const std::vector<ItemElementType>& itemVector) const {
             float product = this->dotProduct(itemVector);
             return product + this->b;
         }
 
         int getQuantization(
-                const std::vector<ItemElementType>& itemVector) {
+                const std::vector<ItemElementType>& itemVector) const {
             return static_cast<int>(floor(this->getProjection(itemVector) / this->W));
         }
 
         int getBucket(
-                const std::vector<ItemElementType>& itemVector) {
+                const std::vector<ItemElementType>& itemVector) const {
             return this->getQuantization(itemVector);
         }
         
