@@ -9,7 +9,7 @@
 #include "lshcore/loader/loader.h"
 
 #include "losha/query/default.hpp"
-#include "lshcore/e2lshfactory.hpp"
+#include "lshcore/lshfactory/simhashfactory.hpp"
 using namespace husky::losha;
 
 typedef int ItemIdType;
@@ -19,7 +19,8 @@ typedef std::pair<ItemIdType, ItemElementType> AnswerMsg;
 typedef DefaultQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Query;
 typedef DefaultItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Item;
 typedef DefaultBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Bucket;
-E2LSHFactory<ItemIdType, ItemElementType> factory;
+
+SimHashFactory<ItemIdType, ItemElementType> factory;
 std::once_flag factory_flag;
 
 void lsh() {
@@ -28,9 +29,8 @@ void lsh() {
     int band = std::stoi(husky::Context::get_param("band"));
     int row = std::stoi(husky::Context::get_param("row"));
     int dimension = std::stoi(husky::Context::get_param("dimension"));
-    int W = std::stoi(husky::Context::get_param("W"));
     std::call_once(factory_flag, [&]() {
-        factory.initialize(band, row, dimension, W);
+        factory.initialize(band, row, dimension);
     });
 
     int BytesPerVector = dimension * 4 + 8;
@@ -50,7 +50,6 @@ int main(int argc, char ** argv) {
     args.push_back("queryPath"); // the inputQueryPath
     args.push_back("itemPath"); // the inputItemPath
     args.push_back("outputPath"); // the outputPath
-    args.push_back("W");
     if (husky::init_with_args(argc, argv, args)) {
         husky::run_job(lsh);
         return 0;

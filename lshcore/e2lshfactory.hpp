@@ -36,26 +36,8 @@ class E2LSHFactory:
     public LSHFactory<ItemIdType, ItemElementType> {
 public:
     // hashFunctions on each worker must be the same
-    std::vector<E2LSHFunction<ItemIdType, ItemElementType>> hashFunctions;    float W;  // segment
-
-    // void initialize(std::map<std::string, std::string>& params) {
-    //     assert(params.find("bands") != params.end());
-    //     assert(params.find("rows") != params.end());
-    //     assert(params.find("W") != params.end());
-    //     assert(params.find("dimension") != params.end());
-    //
-    //     int bands = stoi(params["bands"]);
-    //     int rows = stoi(params["rows"]);
-    //     float W = stof(params["W"]);
-    //     int dimension = stoi(params["dimension"]);
-    //     int seed = 0;
-    //     if (params.find("seed") != params.end()) seed = stoi(params["seed"]);
-    //
-    //     this->initialize(bands, rows, W, dimension, seed);
-    // }
-
-    void loadGQRModel() {
-    }
+    std::vector<E2LSHFunction<ItemIdType, ItemElementType>> hashFunctions;   
+    float W;  // segment
 
     void initialize(int bands, int rows, int dimension, float w, int seed = 0) {
         this->_band = bands;
