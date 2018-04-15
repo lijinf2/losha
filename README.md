@@ -47,5 +47,4 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
 
 ## Tips
     $ We have tried our best to simplify the deployment. But since it is not easy to run a distributed application, we suggest users to try a GQR application and a Husky application before using LoSHa. 
-    $ If you change the root directory (i.e. /data/losha) to other position, please change shell scripts correspondingly
     $ Remove outputfile on HDFS, otherwise the old results will co-exist with the new results

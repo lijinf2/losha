@@ -6,18 +6,20 @@
 #include "io/input/inputformat_store.hpp"
 
 #include "lshcore/lshengine.hpp"
-#include "lshcore/e2lshfactory.hpp"
 #include "lshcore/loader/loader.h"
-#include "e2lsh.hpp"
+
+#include "losha/query/default.hpp"
+#include "lshcore/e2lshfactory.hpp"
+//#include "e2lsh.hpp"
 using namespace husky::losha;
 
 typedef int ItemIdType;
 typedef float ItemElementType;
 typedef ItemIdType QueryMsg;
 typedef std::pair<ItemIdType, ItemElementType> AnswerMsg;
-typedef E2LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Query;
-typedef E2LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Item;
-typedef E2LSHBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Bucket;
+typedef DefaultQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Query;
+typedef DefaultItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Item;
+typedef DefaultBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Bucket;
 E2LSHFactory<ItemIdType, ItemElementType> factory;
 std::once_flag factory_flag;
 

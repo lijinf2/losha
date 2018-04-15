@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "lshcore/densevector.hpp"
+#include "losha/common/dotproduct.hpp"
 
 namespace husky {
 namespace losha {
@@ -35,18 +36,9 @@ class E2LSHFunction {
             this->W = W;
         }
 
-        inline float dotProduct(const std::vector<ItemElementType>& v2) const {
-            assert(this->a.size() == v2.size());
-            float product = 0;
-            for (int i = 0; i < this->a.size(); ++i) {
-                product += this->a[i] * v2[i];
-            }
-            return product;
-        }
-
         inline float getProjection(
                 const std::vector<ItemElementType>& itemVector) const {
-            float product = this->dotProduct(itemVector);
+            float product = dotProduct(this->a, itemVector);
             return product + this->b;
         }
 

@@ -13,9 +13,9 @@
 using namespace husky::losha;
 
 template<typename ItemIdType, typename ItemElementType, typename QueryMsg, typename AnswerMsg>
-class E2LSHQuery : public LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> {
+class DefaultQuery : public LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> {
 public:
-    explicit E2LSHQuery(const typename E2LSHQuery::KeyT& id):LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(id) {}
+    explicit DefaultQuery(const typename DefaultQuery::KeyT& id):LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(id) {}
     void query(LSHFactory<ItemIdType, ItemElementType>& fty, const vector<AnswerMsg>& inMsg) override {
 
         this->queryMsg = this->getItemId();
@@ -26,10 +26,10 @@ public:
 };
 
 template<typename ItemIdType, typename ItemElementType, typename QueryMsg, typename AnswerMsg>
-class E2LSHItem : public LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> {
+class DefaultItem : public LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> {
 public:
-    explicit E2LSHItem(const typename E2LSHItem::KeyT& id):LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(id){}
-    E2LSHItem() : LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>() {}
+    explicit DefaultItem(const typename DefaultItem::KeyT& id):LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(id){}
+    DefaultItem() : LSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>() {}
 
     virtual void answer(LSHFactory<ItemIdType, ItemElementType>& factory, const vector<QueryMsg>& inMsgs) {
 
@@ -48,7 +48,7 @@ public:
 };
 
 template<typename ItemIdType, typename ItemElementType, typename QueryMsg, typename AnswerMsg>
-class E2LSHBucket: public LSHBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> {
+class DefaultBucket: public LSHBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> {
 public:
-    explicit E2LSHBucket(const typename E2LSHBucket::KeyT& bId):LSHBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(bId){}
+    explicit DefaultBucket(const typename DefaultBucket::KeyT& bId):LSHBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(bId){}
 };
