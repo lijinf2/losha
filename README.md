@@ -46,5 +46,4 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
     $ sh evaluate.sh
 
 ## Tips
-    $ We have tried our best to simplify the deployment. But since it is not easy to run a distributed application, we suggest users to try a GQR application and a Husky application before using LoSHa. 
-    $ Remove outputfile on HDFS, otherwise the old results will co-exist with the new results
+    $ We have tried our best to simplify the deployment. But setting up a distributed system is still not easy, we suggest to set up GQR and Husky before using LoSHa. 
