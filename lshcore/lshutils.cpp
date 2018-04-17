@@ -33,11 +33,11 @@ void normalize(std::vector<std::pair<int, float> > &vec) {
     }
 }
 
-std::pair<int, float> lshStofPair(const std::string& pairStr) {
+std::pair<unsigned, float> lshStoPair(const std::string& pairStr) {
     int splitter = pairStr.find(':');
-    int index = std::stoi(pairStr.substr(0, splitter));
+    unsigned index = std::stoul(pairStr.substr(0, splitter));
     float value = std::stof(pairStr.substr(splitter+1));
-    return std::pair<int, float>(index, value);
+    return std::pair<unsigned, float>(index, value);
 }
 
 } // namespace losha

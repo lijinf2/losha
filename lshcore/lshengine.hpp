@@ -280,7 +280,7 @@ void loshaengine(
         // execute queries
         husky::list_execute(query_list,
             [&factory, &item2QueryCH, &query2BucketCH](QueryType& query) {
-
+                if (query.finished) return;
                 auto& inMsg = item2QueryCH.get(query);
                 query.query(factory, inMsg);
 

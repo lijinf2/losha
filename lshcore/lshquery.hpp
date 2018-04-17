@@ -41,6 +41,7 @@ class LSHQuery: public DenseVector<ItemIdType, ItemElementType> {
         // to store buckets, for each bucket, we will send the query
         static thread_local std::vector<  std::vector<int> > query_msg_buffer;
         bool needBroadcast = false;
+        bool finished = false;
 
         QueryMsg queryMsg;
 
@@ -68,6 +69,10 @@ class LSHQuery: public DenseVector<ItemIdType, ItemElementType> {
 
         void broadcast() {
             needBroadcast = true;
+        }
+
+        void setFinished() {
+            this->finished = true;
         }
 };
 

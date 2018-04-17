@@ -10,11 +10,14 @@
 
 #include "gqr/include/lshbox/query/tree.h"
 #include "gqr/include/lshbox/query/tstable.h"
+#include "gqr/util/cal_groundtruth.h"
 
 #include "losha/common/writer.hpp"
 #include "lshcore/lshquery.hpp"
 #include "lshcore/lshitem.hpp"
 using namespace husky::losha;
+using lshbox::TopK;
+using lshbox::IdAndDstPair;
 
 Tree* GLOBAL_Tree = NULL;
 std::once_flag fvs_flag;
@@ -26,7 +29,11 @@ template<
     typename AnswerMsg>
 class GQRQuery : public LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> {
 public:
-    explicit GQRQuery(const typename GQRQuery::KeyT& id):LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(id) {}
+    unsigned iteration = 0;
+    TopK topk;
+    explicit GQRQuery(
+        const typename GQRQuery::KeyT& id):LSHQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg>(id)
+        , topk(20) {}
     void query(LSHFactory<ItemIdType, ItemElementType>& fty, const vector<AnswerMsg>& inMsg) override {
 
         // initliaze fvs
@@ -34,20 +41,24 @@ public:
                 GLOBAL_Tree = new Tree(fty.getRow());
         });
 
-        if (!hasInited) {
+        if (iteration == 0) {
             initialize(fty, GLOBAL_Tree);
-            hasInited = true;
             this->queryMsg = this->getItemId();
-
             for (auto& bId : fty.calItemBuckets(this->getQuery())) {
                 this->sendToBucket(bId);
             }
-        } else {
-            // collect results
-            for (const auto& pair : inMsg) {
-                writeHDFSTriplet(this->getItemId(), pair, "hdfs_namenode", "hdfs_namenode_port", "outputPath");
+        }  else {
+            topk.collect(inMsg);
+
+            if (iteration == 20) {
+                auto result = topk.getTopK();
+                for (const auto& e : result)
+                    writeHDFSTriplet(this->getItemId(), std::make_pair(e.id, e.distance), "hdfs_namenode", "hdfs_namenode_port", "outputPath");
+                // this function will not be invoked once set finished
+                this->setFinished();
+                return;
             }
-            // issue new queries
+
             vector<int> sig(1);
             for (int tb = 0; tb < handlers_.size(); ++tb) {
                 if (handlers_[tb].moveForward()) {
@@ -57,12 +68,11 @@ public:
                 }
             }
         }
+        iteration++;
     }
 
 private:
     std::vector<TSTable> handlers_;
-
-    bool hasInited = false;
     void initialize(const LSHFactory<ItemIdType, ItemElementType>& fty, Tree* tree) {
         int numTables = fty.getBand();
         handlers_.reserve(numTables);
