@@ -47,3 +47,7 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
 
 ## Tips
     $ We have tried our best to simplify the deployment. But setting up a distributed system is still not easy, we suggest to set up GQR and Husky before using LoSHa. 
+
+## Reference
+
+**LoSHa: A General Framework for Scalable Locality Sensitive Hashing (SIGIR 2017)**
