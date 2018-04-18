@@ -51,14 +51,8 @@ public:
 
         int numRows = this->getRow();
         int numBands =  this->getBand();
-        std::vector< std::vector<int> > signatureInBands;
 
-        int intValue;
-        for (int i = 0; i < numBands; ++i) {
-            int start = i * numRows;
-            signatureInBands.push_back(boolsToInts(allSignatures, start, numRows));
-        }
-        return signatureInBands;
+        return boolsToSigs(allSignatures, numRows, numBands);
     }
 
     // for denseVector, NO ASSUMPTION a * b / |a| / |b|
@@ -69,7 +63,7 @@ public:
         return calAngularDist(queryVector, itemVector);
     }
 
-private:
+protected:
     // for denseVector
     std::vector<bool> calSignaturesInBool(
         const vector<ItemElementType>& p) const {
@@ -83,8 +77,8 @@ private:
         return allSignatures;
     }
 
-    std::vector<int> boolsToInts(
-        const vector<bool>& array, int startIdx, int numBools) const {
+    static std::vector<int> boolsToInts(
+        const vector<bool>& array, int startIdx, int numBools) {
         // compress bool vector into int vector
         vector<int> result;
         int iter = startIdx;
@@ -100,5 +94,18 @@ private:
             result.push_back(value);
         }
         return result;
+    }
+
+    static std::vector<vector<int>> boolsToSigs(
+        const vector<bool>& array, int numRows, int numBands) {
+        assert(numRows * numBands == array.size());
+
+        std::vector< std::vector<int> > signatureInBands;
+        signatureInBands.reserve(numBands);
+        for (int i = 0; i < numBands; ++i) {
+            int start = i * numRows;
+            signatureInBands.emplace_back(boolsToInts(array, start, numRows));
+        }
+        return signatureInBands;
     }
 };
