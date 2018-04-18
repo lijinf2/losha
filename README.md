@@ -50,4 +50,4 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
 
 ## Reference
 
-**LoSHa: A General Framework for Scalable Locality Sensitive Hashing (SIGIR 2017)**
+**[LoSHa: A General Framework for Scalable Locality Sensitive Hashing (SIGIR 2017)](http://appsrv.cse.cuhk.edu.hk/~jfli/paper/2017/losha.pdf)**
