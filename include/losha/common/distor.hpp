@@ -34,10 +34,10 @@ float calAngularDist(
         product /= calL2Norm(queryVector);
         product /= calL2Norm(itemVector);
     } 
-    if (product > 1 || fabs(product - 1) < 0.001) {
+    if (product > 1) {
         product = 1;
     }
-    else if (product < -1 || fabs(product - (-1))  < 0.001) {
+    else if (product < -1) {
         product = -1;
     }
 
@@ -55,12 +55,6 @@ float calAngularDist(
         product /= calL2Norm(queryVector);
         product /= calL2Norm(itemVector);
     } 
-    if (product > 1 || fabs(product - 1) < 0.001) {
-        product = 1;
-    }
-    else if (product < -1 || fabs(product - (-1))  < 0.001) {
-        product = -1;
-    }
 
     return acos(product);
 }
