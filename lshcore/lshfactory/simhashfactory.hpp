@@ -10,7 +10,8 @@
 #include "lshcore/lshfactory.hpp"
 #include "lshcore/lshutils.hpp"
 
-#define PI 3.141592654
+namespace husky {
+namespace losha {
 template<typename ItemIdType, typename ItemElementType>
 class SimHashFactory:
     public LSHFactory<ItemIdType, ItemElementType> {
@@ -109,3 +110,12 @@ protected:
         return signatureInBands;
     }
 };
+
+template<typename ItemIdType, typename ItemElementType>
+class SparseSimHashFactory:
+    public SimHashFactory<ItemIdType, pair<int, ItemElementType> > { 
+
+};
+
+} // namespace losha
+} // namespace husky
