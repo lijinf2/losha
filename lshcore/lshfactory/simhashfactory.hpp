@@ -15,7 +15,7 @@ template<typename ItemIdType, typename ItemElementType>
 class SimHashFactory:
     public LSHFactory<ItemIdType, ItemElementType> {
 public:
-    std::vector< SimHashFunction<ItemIdType, ItemElementType> >  hashFunctions;
+    std::vector< SimHashFunction<ItemElementType> >  hashFunctions;
 
     void initialize(int bands, int rows, int dimension, int seed = 0) {
         this->_band = bands;
@@ -39,7 +39,7 @@ public:
                 parameters[j] = distribution(generator);
             }
             normalize(parameters);
-            SimHashFunction<ItemIdType, ItemElementType> func(parameters);
+            SimHashFunction<ItemElementType> func(parameters);
             hashFunctions.emplace_back(func);
         }
     }
