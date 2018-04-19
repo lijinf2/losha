@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <utility>
+#include <climits>
 #include "core/engine.hpp"
 #include "lib/aggregator_factory.hpp"
 
@@ -14,16 +15,26 @@ void statTableSizes(
     husky::ObjList<BucketType>& bucket_list,
     LSHFactory<ItemIdType, ItemElementType>& factory) {
 
-    // aggregator
-    int band = factory.getBand();
-    husky::lib::Aggregator<vector<unsigned>> num_buckets_agg(vector<unsigned>(band), 
+    // get maximum tableId
+    husky::lib::Aggregator<unsigned> maxAgg(0,
+        [](unsigned& a, const unsigned& b){ if (a < b) a = b; });
+
+    husky::list_execute(bucket_list,
+        [&maxAgg](BucketType& bucket) {
+        maxAgg.update(bucket.getTable());
+    });
+    husky::lib::AggregatorFactory::sync();
+    unsigned maxTableIndex = maxAgg.get_value();
+
+    // aggregate table size
+    husky::lib::Aggregator<vector<unsigned>> num_buckets_agg(vector<unsigned>(maxTableIndex), 
         [](vector<unsigned>& a, const vector<unsigned>& b){
             for (int i = 0; i < a.size(); ++i) {
                 a[i] += b[i];
             }
         },
-        [band](vector<unsigned>& v) {
-            v = std::move(vector<unsigned>(band, 0));
+        [maxTableIndex](vector<unsigned>& v) {
+            v = std::move(vector<unsigned>(maxTableIndex, 0));
         }
     );
 
@@ -43,7 +54,7 @@ void statTableSizes(
         husky::LOG_I << "report sizes of every table in (table Idx, numBuckets)" << std::endl;
         const auto& tableSizes = num_buckets_agg.get_value();
         for (int i = 0; i < tableSizes.size(); ++i) {
-            husky::LOG_I << "table " << i << " has " << tableSizes[i] << " buckets" << std::endl;
+            husky::LOG_I << "table " << i << " has " << tableSizes[i] << " buckets " << std::endl;
         }
         husky::LOG_I << std::endl;
     }
