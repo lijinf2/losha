@@ -1,9 +1,10 @@
 mkdir tmp
-g++ --std=c++11 -lpthread -I ../gqr -I ../gqr/include  -I../ -I../include -O3 src/cal_groundtruth_idlibsvm.cpp -o tmp/cal_groundtruth_idlibsvm 2>&1 | tee log.txt
+g++ --std=c++11 -lpthread -I ../gqr -I ../gqr/include  -I../ -I../include -g src/cal_groundtruth_idlibsvm.cpp -o tmp/cal_groundtruth_idlibsvm 2>&1 | tee log.txt
 
-topk=20
-numThreads=20;
+numThreads=4;
 metric="angular"
+queryType="topk:20"
+# queryType="radius:0.9"
 
 iter=0
 for dataset in "tweet"
@@ -21,5 +22,10 @@ do
         lshbox_bench_file="../data/idlibsvm/${dataset}/${dataset}_${metric}_groundtruth.lshbox"
     fi
 
-    tmp/cal_groundtruth_idlibsvm $base_file $query_file $topk $lshbox_bench_file $metric $numThreads
+    if [[ $queryType == "radius:"* ]]
+    then
+        lshbox_bench_file="${lshbox_bench_file}-radius"
+    fi
+
+    tmp/cal_groundtruth_idlibsvm $base_file $query_file $queryType $lshbox_bench_file $metric $numThreads
 done
