@@ -9,6 +9,7 @@
 #include "lshcore/loader/loader.h"
 
 #include "losha/query/default.hpp"
+#include "./plsh.hpp"
 #include "lshcore/lshfactory/apsimhashfactory.hpp"
 using namespace husky::losha;
 
@@ -17,7 +18,7 @@ typedef std::pair<int, float> ItemElementType;
 typedef ItemIdType QueryMsg;
 typedef std::pair<ItemIdType, float> AnswerMsg;
 typedef DefaultQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Query;
-typedef DefaultItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Item;
+typedef PLSHItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Item;
 typedef DefaultBucket<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Bucket;
 
 APSparseSimHashFactory<int, float> factory;
