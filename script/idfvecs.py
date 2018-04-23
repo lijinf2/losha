@@ -1,10 +1,7 @@
-#fvecs_file = "../gqr/data/audio/audio_base.fvecs" 
-#output_file = "./audio_base.idfvecs"
-
 dataset = "audio"
-base_fvecs_file = "../gqr/data/audio/" + dataset + "_base" + ".fvecs"
+base_fvecs_file = "../gqr/data/" + dataset + "/" + dataset + "_base" + ".fvecs"
 base_output_file = dataset + "_base" + ".idfvecs"
-query_fvecs_file = "../gqr/data/audio/" + dataset + "_query" + ".fvecs"
+query_fvecs_file = "../gqr/data/" + dataset + "/" + dataset + "_query" + ".fvecs"
 query_output_file = dataset + "_query" + ".idfvecs"
 
 import struct
