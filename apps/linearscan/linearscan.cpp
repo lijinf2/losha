@@ -10,13 +10,20 @@
 #include "losha/query/default.hpp"
 #include "linearscan.h"
 
+typedef int ItemIdType;
+typedef float ItemElementType;
+typedef ItemIdType QueryMsg;
+typedef std::pair<ItemIdType, ItemElementType> AnswerMsg;
+typedef DefaultQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Query;
+typedef DefaultItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Item;
+
 void linearScan() {
-        hushk::losha::LinearScanner scanner;
+        hushk::losha::LinearScanner<Query, Item, ItemIdType, ItemElementType> scanner;
         scanner.linearScan();
 };
 
 
-int main(int argc, const char ** argc) {
+int main(int argc, char ** argv) {
     std::vector<std::string> args;
     args.push_back("hdfs_namenode");
     args.push_back("hdfs_namenode_port");

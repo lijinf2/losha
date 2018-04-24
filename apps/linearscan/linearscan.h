@@ -5,9 +5,27 @@
 #ifndef LOSHA_LINEARSCAN_H
 #define LOSHA_LINEARSCAN_H
 
+#include "base/serialization.hpp"
+#include "base/log.hpp"
+#include "base/thread_support.hpp"
+#include "boost/functional/hash.hpp"
+#include "core/combiner.hpp"
+#include "core/engine.hpp"
+#include "io/input/line_inputformat.hpp"
+#include "lib/aggregator_factory.hpp"
+
+#include "lshcore/lshbucket.hpp"
+#include "lshcore/lshitem.hpp"
+#include "lshcore/lshquery.hpp"
+#include "lshcore/lshstat.hpp"
+
+#include "losha/common/distor.hpp"
+
+
 namespace hushk {
     namespace losha {
-        template <typename ItemIdType, ItemElementType>
+        std::once_flag broadcast_flag;
+        template <typename QueryType, typename ItemType,typename ItemIdType, typename ItemElementType>
         class LinearScanner {
 
             typedef std::pair<ItemIdType, ItemElementType> AnswerMsg;
@@ -47,32 +65,41 @@ namespace hushk {
 
                 husky::list_execute(
                         item_list,
-                        [&item2queryChannel](ItemType& item) {
+                        [&](ItemType& item) {
                             for (auto iter = _idToQueryVector.begin(); iter!=_idToQueryVector.end(); iter++) {
-                                item2queryChannel.push(std::make_pair(iter.first, dist(item, item.second)), iter.first);
+                                ItemElementType item_query_distance = calE2Dist(item.getItemVector(), iter->second);
+                                item2queryChannel.push(std::make_pair(iter->first, item_query_distance), iter->first);
                             }
                         }
                 );
 
                 husky::list_execute(
                         query_list,
-                        [&item2queryChannel](QueryType& query) {
+                        [&](QueryType& query) {
                             for (auto& msg : item2queryChannel.get(query)) {
-                                ItemType& item;
-                                ItemElementType distance = dist(item, query);
-                                if (topKQueues[query.id()].size() < topK ) {
-                                    topKQueues[query.id()].push(std::make_pair(item.id(), distance));
-                                } else if (topK[query.id()].top().second() > distance) {
-                                    topKQueues[query.id()].push(std::make_pair(item.id(), distance));
+                                ItemIdType itemId = msg.first;
+                                ItemElementType item_query_distance = msg.second;
+
+                                TopKQueueType& topKQueue = topKQueues[query.id()];
+                                if (topKQueue.size() < topK ) {
+                                
+                                    topKQueue.push(std::make_pair(itemId, item_query_distance));
+                                } else if (topKQueue.top().second > item_query_distance) {
+                                    topKQueue.pop();
+                                    topKQueue.push(std::make_pair(itemId, item_query_distance));
                                 }
                             }
                         }
                 );
 
                 for (auto iter = topKQueues.begin(); iter != topKQueues.end(); ++iter) {
-                    ItemIdType queryId = iter.first();
-                    std::pair<ItemIdType, ItemElementType> topKRecode = iter.second();
-                    writeHDFSTriplet(queryId, topKRecode.first(), topKRecode.second(), "hdfs_namenode", "hdfs_namenode_port", "outputPath");
+                    ItemIdType queryId = iter->first;
+                    TopKQueueType& topKRecords = iter->second;
+                    while(topKRecords.size()) {
+                        const std::pair<ItemIdType, ItemElementType>& topKRecord = topKRecords.top();
+                        writeHDFSTriplet(queryId, topKRecord.first, topKRecord.second, "hdfs_namenode", "hdfs_namenode_port", "outputPath");
+                        topKRecords.pop();
+                    }
                 }
 
             };
@@ -82,33 +109,33 @@ namespace hushk {
 
             std::unordered_map<ItemIdType, std::vector<ItemElementType> > _idToQueryVector;
 
-            std::unordered_map<ItemIdType,  TopKQueueType > topKQueues;
+            std::unordered_map<ItemIdType, TopKQueueType > topKQueues;
 
             // Fetch broadcasted queries into _idToQueryVector
             inline void insertQueryVector(int qid, const std::vector<ItemElementType>& qvec) {
                 if (_idToQueryVector.find(qid) != _idToQueryVector.end()) {
-                    ASSERT_MSG(0, "query already exists");
+                    //ASSERT_MSG(0, "query already exists");
                 }
                 _idToQueryVector[qid] = qvec;
             }
 
-            template <typename DataType,typename ItemIdType, typename ItemElementType,typename InputFormat >
+            template <typename DataType,typename InputFormat >
             void loadData(
-                    husky::ObjList<DataType>* data_list,
+                    husky::ObjList<DataType>& data_list,
                     void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&),
-                    InputFormat* infmt) {
+                    InputFormat& infmt) {
 
                 auto& load_data_channel = husky::ChannelStore::create_push_channel<
                                           vector<ItemElementType> >(infmt, data_list);
                 husky::load(
                         infmt,
-                        [&ch, &setItem](boost::string_ref & line) {
+                        [&load_data_channel, &setItem](boost::string_ref & line) {
                             try {
                                 ItemIdType itemId;
                                 vector<ItemElementType> itemVector;
                                 setItem(line, itemId, itemVector);
 
-                                ch.push(itemVector, itemId);
+                                load_data_channel.push(itemVector, itemId);
 
                             } catch(std::exception e) {
                                 assert("bucket_parser error");
@@ -116,21 +143,21 @@ namespace hushk {
                         }
                 );
 
-                husk::list_execute(
+                husky::list_execute(
                         data_list,
                         [&load_data_channel](DataType& data) {
                             auto msgs = load_data_channel.get(data);
                             assert(msgs.size()==1);
 
-                            query.setItemVector(msgs[0]);
-                            assert(query.getItemVector().size() != 0);
+                            data.setItemVector(msgs[0]);
+                            assert(data.getItemVector().size() != 0);
                         }
                 );
             }
 
             template<
-                    typename ItemIdType, typename ItemElementType, typename DataType>
-            void broadcastQueries(husky::ObjList<DataType>& data_list) {
+                    typename DataType>
+            void broadcastQueries(husky::ObjList<DataType>& query_list) {
                 typedef std::pair<ItemIdType, std::vector<ItemElementType>> IdVectorPair;
                 typedef std::vector<IdVectorPair> QueryColType;
 
@@ -169,7 +196,7 @@ namespace hushk {
                 husky::lib::AggregatorFactory::sync();
 
 
-                std::call_once(broadcast_flag, [&query_vector_agg]() {
+                std::call_once(broadcast_flag, [&]() {
                     for (auto p : query_vector_agg.get_value()) {
                         insertQueryVector(p.first, p.second);
                     }
