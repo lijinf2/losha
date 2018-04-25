@@ -1,9 +1,4 @@
-//
-// Created by darxan on 2018/4/24.
-//
-#pragma once
-#ifndef LOSHA_LINEARSCAN_H
-#define LOSHA_LINEARSCAN_H
+#include <string>
 
 #include "base/serialization.hpp"
 #include "base/log.hpp"
@@ -13,74 +8,162 @@
 #include "core/engine.hpp"
 #include "io/input/line_inputformat.hpp"
 #include "lib/aggregator_factory.hpp"
+#include "io/input/inputformat_store.hpp"
 
-#include "lshcore/lshbucket.hpp"
-#include "lshcore/lshitem.hpp"
-#include "lshcore/lshquery.hpp"
-#include "lshcore/lshstat.hpp"
-
+#include "lshcore/loader/loader.h"
+#include "lshcore/lshutils.hpp"
 #include "losha/common/distor.hpp"
 
 
-namespace hushk {
+namespace husky {
     namespace losha {
-        std::once_flag broadcast_flag;
-        template <typename QueryType, typename ItemType,typename ItemIdType, typename ItemElementType>
+        
+std::once_flag broadcast_flag;
+template<typename ItemType, typename ItemIdType, typename ItemElementType>
+auto item_loader(
+    husky::PushChannel< vector<ItemElementType>, ItemType > &ch,
+    void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&)) {
+    auto parse_lambda = [&ch, &setItem]
+    (boost::string_ref & line) {
+        try {
+            ItemIdType itemId;
+            vector<ItemElementType> itemVector;
+            setItem(line, itemId, itemVector);
+            ch.push(itemVector, itemId);
+        } catch(std::exception e) {
+            assert("bucket_parser error");
+        }
+    };
+    return parse_lambda;
+}
+
+template<typename QueryType,
+         typename ItemIdType, typename ItemElementType, typename InputFormat >
+void loadQueries(
+    husky::ObjList<QueryType>& query_list,
+    void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&),
+    InputFormat& infmt) {
+
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "in loadQueries: start to load queries" << std::endl;
+    }
+
+    auto& loadQueryCH = 
+        husky::ChannelStore::create_push_channel<
+            vector<ItemElementType>>(infmt, query_list);
+
+    husky::load(infmt, 
+        item_loader(loadQueryCH, setItem));
+
+    husky::list_execute(query_list, 
+        [&loadQueryCH](QueryType& query) {
+            auto msgs = loadQueryCH.get(query);
+            assert(msgs.size() == 1);
+
+            query.setItemVector(msgs[0]);
+            assert(query.getItemVector().size() != 0);
+    });
+
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "in loadQueries: finish loading queries" << std::endl;
+    }
+}
+
+        template<typename FirstType, typename SecondType>
+        class PairComparison {
+        public: 
+            typedef std::pair<FirstType, SecondType> pii;
+            bool operator () (const pii &n1, const pii &n2) const {
+                if (n1.second == n2.second) {
+                    return n1.first > n2.first;
+
+                }
+                return n1.second < n2.second;
+            }
+
+        };
+
+        template<typename QueryType, typename ItemType, typename ItemIdType, typename ItemElementType>
         class LinearScanner {
-
             typedef std::pair<ItemIdType, ItemElementType> AnswerMsg;
-            typedef std::priority_queue<std::pair<ItemIdType, ItemElementType> > TopKQueueType;
-
+            typedef std::priority_queue<AnswerMsg, vector<AnswerMsg>, PairComparison<ItemIdType, ItemElementType > > TopKQueueType;
         public:
-            void linearScan() {
+            void linearScan() { 
                 int dimension = std::stoi(husky::Context::get_param("dimension"));
                 int topK = std::stoi(husky::Context::get_param("topK"));
+            
                 std::string itemPath = husky::Context::get_param("itemPath");
                 std::string queryPath = husky::Context::get_param("queryPath");
 
                 int sizeOfVector = dimension * 4 + 8;
+            
+                auto setItem = parseIdFvecs;
 
-                auto& itemFormat = husky::io::InputFormatStore::create_chunk_inputformat(sizeOfVector);
-                auto& queryFormat = husky::io::InputFormatStore::create_chunk_inputformat(sizeOfVector);
+                if (husky::Context::get_global_tid() == 0) {
+                    husky::LOG_I << "dimension   : " << dimension << std::endl;
+                    husky::LOG_I << "topK        : " << topK << std::endl;
+                    husky::LOG_I << "item        : " << itemPath << std::endl;
+                    husky::LOG_I << "quey        : " << queryPath << std::endl;
+                    husky::LOG_I << "vector size : " << sizeOfVector << std::endl;
+                }
 
-                itemFormat.set_input(itemPath);
-                queryFormat.set_input(queryPath);
+                auto& infmt = husky::io::InputFormatStore::create_chunk_inputformat(sizeOfVector); 
 
-                auto& item_list  = husky::ObjListStore::create_objlist<ItemType>();
-                auto& query_list = husky::ObjListStore::create_objlist<QueryType>();
+                infmt.set_input(itemPath);
+                auto & item_list = husky::ObjListStore::create_objlist<ItemType>();
+                loadQueries(item_list, setItem, infmt);
 
-                loadData (item_list, parseIdFvecs, itemFormat);
-                loadData (query_list, parseIdFvecs, queryFormat);
+                husky::list_execute(item_list, [](ItemType& item){
+                        });
+                std::cout << "item size  : " << item_list.get_size() << std::endl;
 
-                // broadcast queries
-                // item receive queries then calculate distance
-                // item return distance to query
-                // retrieve top K result
+                infmt.set_input(queryPath); 
+                auto & query_list = husky::ObjListStore::create_objlist<QueryType>();
+                loadQueries(query_list, setItem, infmt);
+                
+                husky::list_execute(query_list, [](QueryType& query) {
+                        });
+                std::cout << "query size : " << query_list.get_size() <<std::endl;
 
+                if (husky::Context::get_global_tid() == 0)
+                    husky::LOG_I << "[broadcast] start" << std::endl;
+                
                 broadcastQueries(query_list);
 
+                std::cout << "query map size : " << getIdToQueryMap().size() <<std::endl;
+
+                if (husky::Context::get_global_tid() == 0)
+                    husky::LOG_I << "[calculate] start calculate distance and send distance to queries" << std::endl;
 
                 auto& item2queryChannel = husky::ChannelStore::create_push_channel<
                         AnswerMsg>(item_list, query_list);
+
+
+                auto& _idToQueryVector = getIdToQueryMap();
 
                 husky::list_execute(
                         item_list,
                         [&](ItemType& item) {
                             for (auto iter = _idToQueryVector.begin(); iter!=_idToQueryVector.end(); iter++) {
                                 ItemElementType item_query_distance = calE2Dist(item.getItemVector(), iter->second);
-                                item2queryChannel.push(std::make_pair(iter->first, item_query_distance), iter->first);
+                                item2queryChannel.push(std::make_pair(item.id(), item_query_distance), iter->first);
                             }
                         }
                 );
 
+                if (husky::Context::get_global_tid() == 0)
+                    husky::LOG_I << "[receive] receive distance and choose topK" << std::endl;
+                
                 husky::list_execute(
                         query_list,
                         [&](QueryType& query) {
+                           
+                            TopKQueueType& topKQueue = topKQueues[query.id()];
+                            
                             for (auto& msg : item2queryChannel.get(query)) {
                                 ItemIdType itemId = msg.first;
                                 ItemElementType item_query_distance = msg.second;
 
-                                TopKQueueType& topKQueue = topKQueues[query.id()];
                                 if (topKQueue.size() < topK ) {
                                 
                                     topKQueue.push(std::make_pair(itemId, item_query_distance));
@@ -91,7 +174,6 @@ namespace hushk {
                             }
                         }
                 );
-
                 for (auto iter = topKQueues.begin(); iter != topKQueues.end(); ++iter) {
                     ItemIdType queryId = iter->first;
                     TopKQueueType& topKRecords = iter->second;
@@ -101,59 +183,28 @@ namespace hushk {
                         topKRecords.pop();
                     }
                 }
-
-            };
-
+                //end here
+            }
 
         private:
 
-            std::unordered_map<ItemIdType, std::vector<ItemElementType> > _idToQueryVector;
-
             std::unordered_map<ItemIdType, TopKQueueType > topKQueues;
 
+            static std::unordered_map<ItemIdType, std::vector<ItemElementType> >& getIdToQueryMap() {
+                static std::unordered_map<ItemIdType, std::vector<ItemElementType> > _idToQueryVector;
+                return _idToQueryVector;
+            }
+
             // Fetch broadcasted queries into _idToQueryVector
-            inline void insertQueryVector(int qid, const std::vector<ItemElementType>& qvec) {
+            static inline void insertQueryVector(int qid, const std::vector<ItemElementType>& qvec) {
+                auto& _idToQueryVector = getIdToQueryMap();
                 if (_idToQueryVector.find(qid) != _idToQueryVector.end()) {
                     //ASSERT_MSG(0, "query already exists");
                 }
                 _idToQueryVector[qid] = qvec;
             }
 
-            template <typename DataType,typename InputFormat >
-            void loadData(
-                    husky::ObjList<DataType>& data_list,
-                    void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&),
-                    InputFormat& infmt) {
 
-                auto& load_data_channel = husky::ChannelStore::create_push_channel<
-                                          vector<ItemElementType> >(infmt, data_list);
-                husky::load(
-                        infmt,
-                        [&load_data_channel, &setItem](boost::string_ref & line) {
-                            try {
-                                ItemIdType itemId;
-                                vector<ItemElementType> itemVector;
-                                setItem(line, itemId, itemVector);
-
-                                load_data_channel.push(itemVector, itemId);
-
-                            } catch(std::exception e) {
-                                assert("bucket_parser error");
-                            }
-                        }
-                );
-
-                husky::list_execute(
-                        data_list,
-                        [&load_data_channel](DataType& data) {
-                            auto msgs = load_data_channel.get(data);
-                            assert(msgs.size()==1);
-
-                            data.setItemVector(msgs[0]);
-                            assert(data.getItemVector().size() != 0);
-                        }
-                );
-            }
 
             template<
                     typename DataType>
@@ -201,11 +252,9 @@ namespace hushk {
                         insertQueryVector(p.first, p.second);
                     }
                 });
-
             }
+            /// end
+     };
 
-        };
-    }
+    };
 };
-
-#endif //LOSHA_LINEARSCAN_H

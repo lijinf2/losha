@@ -3,10 +3,7 @@
 //
 #include <vector>
 #include <queue>
-#include "io/input/inputformat_store.hpp"
 
-
-#include "lshcore/loader/loader.h"
 #include "losha/query/default.hpp"
 #include "linearscan.h"
 
@@ -18,7 +15,8 @@ typedef DefaultQuery<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Query;
 typedef DefaultItem<ItemIdType, ItemElementType, QueryMsg, AnswerMsg> Item;
 
 void linearScan() {
-        hushk::losha::LinearScanner<Query, Item, ItemIdType, ItemElementType> scanner;
+
+        husky::losha::LinearScanner<Query, Item, ItemIdType, ItemElementType> scanner;
         scanner.linearScan();
 };
 
