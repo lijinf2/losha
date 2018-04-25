@@ -11,5 +11,9 @@ cd ../build
 cmake ../ -DCMAKE_BUILD_TYPE=Release
 make evaluate_triplets ${format} 2>&1 | tee ../script/log.txt
 cd ../script
+log=`grep error log.txt`
+if [ "$log" != "" ]; then
+    exit
+fi
 
 ../build/evaluate_triplets $lshbox_file $triplets_file

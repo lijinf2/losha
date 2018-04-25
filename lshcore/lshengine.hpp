@@ -49,11 +49,10 @@ namespace losha {
 
 template<typename ItemType, typename ItemIdType, typename ItemElementType>
 auto item_loader(
-    LSHFactory<ItemIdType, ItemElementType>& factory,
     husky::PushChannel< vector<ItemElementType>, ItemType > &ch,
     void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&)) {
 
-    auto parse_lambda = [&factory, &ch, &setItem]
+    auto parse_lambda = [&ch, &setItem]
     (boost::string_ref & line) {
         try {
             ItemIdType itemId;
@@ -89,7 +88,7 @@ void loadItems(
         husky::ChannelStore::create_push_channel<int>(item_list, bucket_list);
 
     husky::load(infmt, 
-        item_loader(factory, loadItemCH, setItem));
+        item_loader(loadItemCH, setItem));
 
     // create item object, need list execute to active the object creation
     husky::list_execute(item_list, 
@@ -145,7 +144,7 @@ void loadQueries(
             vector<ItemElementType>>(infmt, query_list);
 
     husky::load(infmt, 
-        item_loader(factory, loadQueryCH, setItem));
+        item_loader(loadQueryCH, setItem));
 
     husky::list_execute(query_list, 
         [&factory, &loadQueryCH](QueryType& query) {
