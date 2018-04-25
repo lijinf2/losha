@@ -1,8 +1,14 @@
+#pragma once
 #include <vector>
 #include <string>
 #include "boost/tokenizer.hpp"
 #include "lshcore/lshutils.cpp"
+#include "lshcore/densevector.hpp"
 using std::vector;
+using std::string;
+
+namespace husky {
+namespace losha {
 template<typename ItemElementType>
 void parseIdFvecs(
     boost::string_ref& line,
@@ -27,6 +33,42 @@ void parseIdFvecs(
     } 
 }
 
+
+template<typename FeatureType>
+void loadIdFvecs(
+    husky::ObjList<DenseVector<int, FeatureType>>& obj_list,
+    const string& itemPath, 
+    int dimension) {
+
+    int BytesPerVector = dimension * sizeof(FeatureType) + 8;
+    auto& binaryInputFormat = husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector); 
+
+    auto& loadChannel = 
+        husky::ChannelStore::create_push_channel<
+           vector<FeatureType>>(binaryInputFormat, obj_list);
+    husky::load(binaryInputFormat, item_loader(loadChannel, parseIdFvecs));
+}
+
+template<typename ItemType, typename ItemIdType, typename ItemElementType>
+auto item_loader(
+    husky::PushChannel< vector<ItemElementType>, ItemType > &ch,
+    void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&)) {
+
+    auto parse_lambda = [&ch, &setItem]
+    (boost::string_ref & line) {
+        try {
+            ItemIdType itemId;
+            vector<ItemElementType> itemVector;
+            setItem(line, itemId, itemVector);
+
+            ch.push(itemVector, itemId);
+        } catch(std::exception e) {
+            assert("bucket_parser error");
+        }
+    };
+    return parse_lambda;
+}
+
 void parseIdLibsvm(
     boost::string_ref& line,
     int& itemId,
@@ -46,4 +88,6 @@ void parseIdLibsvm(
         } else itemVector.push_back(husky::losha::lshStoPair(w));
     }
     assert (itemVector.size() != 0);
+}
+}
 }

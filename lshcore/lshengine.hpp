@@ -29,6 +29,7 @@
 #include "lshitem.hpp"
 #include "lshquery.hpp"
 #include "lshstat.hpp"
+#include "lshcore/loader/loader.h"
 
 using std::vector;
 using std::string;
@@ -46,26 +47,6 @@ public:
 
 namespace husky {
 namespace losha {
-
-template<typename ItemType, typename ItemIdType, typename ItemElementType>
-auto item_loader(
-    husky::PushChannel< vector<ItemElementType>, ItemType > &ch,
-    void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&)) {
-
-    auto parse_lambda = [&ch, &setItem]
-    (boost::string_ref & line) {
-        try {
-            ItemIdType itemId;
-            vector<ItemElementType> itemVector;
-            setItem(line, itemId, itemVector);
-
-            ch.push(itemVector, itemId);
-        } catch(std::exception e) {
-            assert("bucket_parser error");
-        }
-    };
-    return parse_lambda;
-}
 
 // assume input is set for InputFormat
 template<typename BucketType, typename ItemType,
