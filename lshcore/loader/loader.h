@@ -3,10 +3,11 @@
 #include "boost/tokenizer.hpp"
 #include "lshcore/lshutils.cpp"
 using std::vector;
+template<typename ItemElementType>
 void parseIdFvecs(
     boost::string_ref& line,
     int & itemId,
-    std::vector<float>& itemVector) {
+    std::vector<ItemElementType>& itemVector) {
 
     assert(line.size() != 0);
 
@@ -21,8 +22,8 @@ void parseIdFvecs(
     itemVector.resize(dimension);
     int startIdx = 8;
     for (int i = 0; i < dimension; ++i) {
-        memcpy(&itemVector[i], &line[startIdx], 4);
-        startIdx += 4;
+        memcpy(&itemVector[i], &line[startIdx], sizeof(ItemElementType));
+        startIdx += sizeof(ItemElementType);
     } 
 }
 
