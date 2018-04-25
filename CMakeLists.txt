@@ -35,8 +35,8 @@ add_subdirectory(lshcore)
 add_subdirectory(l2h)
 add_subdirectory(apps)
 add_subdirectory(test)
-add_subdirectory(learn)
 add_subdirectory(tools)
+add_subdirectory(knngraph)
 
 add_library(losha-lib STATIC
     $<TARGET_OBJECTS:lshcore-obj>)

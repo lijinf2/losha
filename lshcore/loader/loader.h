@@ -33,25 +33,9 @@ void parseIdFvecs(
     } 
 }
 
-
-template<typename FeatureType>
-void loadIdFvecs(
-    husky::ObjList<DenseVector<int, FeatureType>>& obj_list,
-    const string& itemPath, 
-    int dimension) {
-
-    int BytesPerVector = dimension * sizeof(FeatureType) + 8;
-    auto& binaryInputFormat = husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector); 
-
-    auto& loadChannel = 
-        husky::ChannelStore::create_push_channel<
-           vector<FeatureType>>(binaryInputFormat, obj_list);
-    husky::load(binaryInputFormat, item_loader(loadChannel, parseIdFvecs));
-}
-
-template<typename ItemType, typename ItemIdType, typename ItemElementType>
+template<typename ObjType, typename ItemIdType, typename ItemElementType>
 auto item_loader(
-    husky::PushChannel< vector<ItemElementType>, ItemType > &ch,
+    husky::PushChannel< vector<ItemElementType>, ObjType> &ch,
     void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&)) {
 
     auto parse_lambda = [&ch, &setItem]
@@ -67,6 +51,34 @@ auto item_loader(
         }
     };
     return parse_lambda;
+}
+
+template<typename FeatureType>
+void loadIdFvecs(
+    husky::ObjList<DenseVector<int, FeatureType>>& obj_list,
+    const string& itemPath, 
+    int dimension) {
+
+    int BytesPerVector = dimension * sizeof(FeatureType) + 8;
+    auto& binaryInputFormat = husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector); 
+    binaryInputFormat.set_input(itemPath);
+
+    auto& loadChannel = 
+        husky::ChannelStore::create_push_channel<
+           vector<FeatureType>>(binaryInputFormat, obj_list);
+    husky::load(binaryInputFormat, item_loader(loadChannel, parseIdFvecs<FeatureType>));
+
+    husky::list_execute(obj_list,
+        [&loadChannel, &dimension](DenseVector<int, FeatureType>& obj){
+        auto msgs = loadChannel.get(obj);
+        assert(msgs.size() == 1);
+        obj.setItemVector(msgs[0]);
+        assert(obj.getItemVector().size() == dimension);
+    });
+
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finish loading from itemPath: " << itemPath << std::endl;
+    }
 }
 
 void parseIdLibsvm(
