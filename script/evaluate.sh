@@ -1,13 +1,15 @@
 # only supports lines of triplets in the format of (srcId, dstId, dist)
 
 mkdir tmp
-rm -rf tmp/output.txt
 hadoop dfs -cat /losha/output/* > tmp/output.txt
-
+# lshbox_file="../data/idfvecs/audio/audio_groundtruth.lshbox"
 lshbox_file="../gqr/data/audio/audio_groundtruth.lshbox"
 triplets_file="tmp/output.txt"
 
-binary_file="tmp/evaluate_triplets"
-g++ --std=c++11 -I ../gqr -I ../gqr/include  -O3 src/evaluate_triplets.cpp -o $binary_file 2>&1 | tee log.txt
+cd ../build 
+# cmake ../ -DCMAKE_BUILD_TYPE=Debug
+cmake ../ -DCMAKE_BUILD_TYPE=Release
+make evaluate_triplets ${format} 2>&1 | tee ../script/log.txt
+cd ../script
 
-tmp/evaluate_triplets $lshbox_file $triplets_file
+../build/evaluate_triplets $lshbox_file $triplets_file

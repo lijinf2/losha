@@ -3,6 +3,7 @@
 #include <fstream>
 #include <utility>
 #include <string>
+#include <cassert>
 #include "../../gqr/apps/opq_evaluate.cpp"
 using namespace std;
 int main(int argc, char** argv) {
