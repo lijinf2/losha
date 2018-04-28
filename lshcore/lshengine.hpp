@@ -111,7 +111,6 @@ void loadItems(
 template<typename QueryType,
          typename ItemIdType, typename ItemElementType, typename InputFormat >
 void loadQueries(
-    LSHFactory<ItemIdType, ItemElementType>& factory,
     husky::ObjList<QueryType>& query_list,
     void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&),
     InputFormat& infmt) {
@@ -128,7 +127,7 @@ void loadQueries(
         item_loader(loadQueryCH, setItem));
 
     husky::list_execute(query_list, 
-        [&factory, &loadQueryCH](QueryType& query) {
+        [&loadQueryCH](QueryType& query) {
             auto msgs = loadQueryCH.get(query);
             assert(msgs.size() == 1);
 
@@ -231,7 +230,7 @@ void loshaengine(
     auto & query_list =
         husky::ObjListStore::create_objlist<QueryType>();
     infmt.set_input(queryPath);
-    loadQueries(factory, query_list, setItem, infmt);
+    loadQueries(query_list, setItem, infmt);
 
     // end of debug
     broadcastQueries(factory, query_list);
