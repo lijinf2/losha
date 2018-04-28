@@ -15,7 +15,7 @@
 #pragma once
 #include <string>
 #include <vector>
-
+#include <functional>
 #include "base/serialization.hpp"
 #include "base/log.hpp"
 #include "base/thread_support.hpp"
@@ -148,6 +148,18 @@ void broadcastQueries(
     LSHFactory<ItemIdType, ItemElementType>& factory,
     husky::ObjList<QueryType>& query_list){
 
+    std::function<void(ItemIdType&, std::vector<ItemElementType>& ) > query_handler = 
+            [&](ItemIdType& first, std::vector<ItemElementType>& second){
+                factory.insertQueryVector(first, second);
+            };
+    broadcastQueries( query_handler, query_list);
+}
+
+template<
+    typename ItemIdType, typename ItemElementType, typename QueryType>
+void broadcastQueries(
+    std::function<void(ItemIdType&, std::vector<ItemElementType>& ) > query_handler,
+    husky::ObjList<QueryType>& query_list){
     // define query aggregator and set up _idToQueryVector in factory
     if (husky::Context::get_global_tid() == 0) {
         husky::LOG_I << "in broadcastQueries" << std::endl;
@@ -191,9 +203,9 @@ void broadcastQueries(
     husky::lib::AggregatorFactory::sync();
     // should flush 
     // insert broadcast query to factory, call once
-    std::call_once(broadcast_flag, [&factory, &query_vector_agg](){
+    std::call_once(broadcast_flag, [&query_handler, &query_vector_agg](){
         for (auto p : query_vector_agg.get_value()) {
-            factory.insertQueryVector(p.first, p.second);
+            query_handler(p.first, p.second);
         }
     });
     if (husky::Context::get_global_tid() == 0) {

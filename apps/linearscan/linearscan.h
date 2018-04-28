@@ -12,63 +12,13 @@
 
 #include "lshcore/loader/loader.h"
 #include "lshcore/lshutils.hpp"
+#include "lshcore/lshengine.hpp"
 #include "losha/common/distor.hpp"
 
 
 namespace husky {
     namespace losha {
         
-std::once_flag broadcast_flag;
-template<typename ItemType, typename ItemIdType, typename ItemElementType>
-auto item_loader(
-    husky::PushChannel< vector<ItemElementType>, ItemType > &ch,
-    void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&)) {
-    auto parse_lambda = [&ch, &setItem]
-    (boost::string_ref & line) {
-        try {
-            ItemIdType itemId;
-            vector<ItemElementType> itemVector;
-            setItem(line, itemId, itemVector);
-            ch.push(itemVector, itemId);
-        } catch(std::exception e) {
-            assert("bucket_parser error");
-        }
-    };
-    return parse_lambda;
-}
-
-template<typename QueryType,
-         typename ItemIdType, typename ItemElementType, typename InputFormat >
-void loadQueries(
-    husky::ObjList<QueryType>& query_list,
-    void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&),
-    InputFormat& infmt) {
-
-    if (husky::Context::get_global_tid() == 0) {
-        husky::LOG_I << "in loadQueries: start to load queries" << std::endl;
-    }
-
-    auto& loadQueryCH = 
-        husky::ChannelStore::create_push_channel<
-            vector<ItemElementType>>(infmt, query_list);
-
-    husky::load(infmt, 
-        item_loader(loadQueryCH, setItem));
-
-    husky::list_execute(query_list, 
-        [&loadQueryCH](QueryType& query) {
-            auto msgs = loadQueryCH.get(query);
-            assert(msgs.size() == 1);
-
-            query.setItemVector(msgs[0]);
-            assert(query.getItemVector().size() != 0);
-    });
-
-    if (husky::Context::get_global_tid() == 0) {
-        husky::LOG_I << "in loadQueries: finish loading queries" << std::endl;
-    }
-}
-
         template<typename FirstType, typename SecondType>
         class PairComparison {
         public: 
@@ -97,7 +47,7 @@ void loadQueries(
 
                 int sizeOfVector = dimension * 4 + 8;
             
-                auto setItem = parseIdFvecs;
+                void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&) = parseIdFvecs;
 
                 if (husky::Context::get_global_tid() == 0) {
                     husky::LOG_I << "dimension   : " << dimension << std::endl;
@@ -128,7 +78,12 @@ void loadQueries(
                 if (husky::Context::get_global_tid() == 0)
                     husky::LOG_I << "[broadcast] start" << std::endl;
                 
-                broadcastQueries(query_list);
+                std::function<void(ItemIdType&, std::vector<ItemElementType>& )> query_handler =
+                    [](ItemIdType& first, std::vector<ItemElementType>& second){
+                        insertQueryVector(first, second);
+                    };
+                
+                broadcastQueries(query_handler, query_list);
 
                 std::cout << "query map size : " << getIdToQueryMap().size() <<std::endl;
 
@@ -205,55 +160,6 @@ void loadQueries(
             }
 
 
-
-            template<
-                    typename DataType>
-            void broadcastQueries(husky::ObjList<DataType>& query_list) {
-                typedef std::pair<ItemIdType, std::vector<ItemElementType>> IdVectorPair;
-                typedef std::vector<IdVectorPair> QueryColType;
-
-                auto update_to_col = [](QueryColType& collector, const IdVectorPair& e) {
-                    collector.push_back(e);
-                };
-
-                husky::lib::Aggregator< QueryColType > query_vector_agg(
-                        QueryColType(), // parameter for initialization
-                        [update_to_col](QueryColType& a, const QueryColType& b) { // parameter for aggregation rule
-                            for (const auto& e : b ) {
-                                update_to_col(a, e);
-                            }
-                        },
-                        [](QueryColType& col) {col.clear();},
-                        [update_to_col](husky::base::BinStream& in, QueryColType& col) { // parameter for deserialization
-                            col.clear();
-                            for (size_t n = husky::base::deser<size_t>(in); n--;) {
-                                update_to_col(col, husky::base::deser<IdVectorPair>(in));
-                            }
-                        },
-                        [](husky::base::BinStream& out, const QueryColType& col){ // parameter for serialization
-                            out << col.size();
-                            for (auto& vec : col) {
-                                out << vec;
-                            }
-                        });
-
-
-                husky::list_execute(query_list,
-                                    [&query_vector_agg, &update_to_col](QueryType& query) {
-                                        query_vector_agg.update(
-                                                update_to_col,
-                                                std::make_pair(query.getItemId(), query.getItemVector()));
-                                    });
-                husky::lib::AggregatorFactory::sync();
-
-
-                std::call_once(broadcast_flag, [&]() {
-                    for (auto p : query_vector_agg.get_value()) {
-                        insertQueryVector(p.first, p.second);
-                    }
-                });
-            }
-            /// end
      };
 
     };
