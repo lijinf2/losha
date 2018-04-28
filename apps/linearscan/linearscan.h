@@ -41,61 +41,43 @@ namespace husky {
             void linearScan() { 
                 int dimension = std::stoi(husky::Context::get_param("dimension"));
                 int topK = std::stoi(husky::Context::get_param("topK"));
-            
                 std::string itemPath = husky::Context::get_param("itemPath");
                 std::string queryPath = husky::Context::get_param("queryPath");
-
                 int sizeOfVector = dimension * 4 + 8;
             
                 void (*setItem)(boost::string_ref&, ItemIdType&, vector<ItemElementType>&) = parseIdFvecs;
-
-                if (husky::Context::get_global_tid() == 0) {
-                    husky::LOG_I << "dimension   : " << dimension << std::endl;
-                    husky::LOG_I << "topK        : " << topK << std::endl;
-                    husky::LOG_I << "item        : " << itemPath << std::endl;
-                    husky::LOG_I << "quey        : " << queryPath << std::endl;
-                    husky::LOG_I << "vector size : " << sizeOfVector << std::endl;
-                }
-
+                
+                // 0. load items and queries
                 auto& infmt = husky::io::InputFormatStore::create_chunk_inputformat(sizeOfVector); 
+                auto & item_list = husky::ObjListStore::create_objlist<ItemType>();
+                auto & query_list = husky::ObjListStore::create_objlist<QueryType>();
 
                 infmt.set_input(itemPath);
-                auto & item_list = husky::ObjListStore::create_objlist<ItemType>();
                 loadQueries(item_list, setItem, infmt);
 
-                husky::list_execute(item_list, [](ItemType& item){
-                        });
-                std::cout << "item size  : " << item_list.get_size() << std::endl;
-
                 infmt.set_input(queryPath); 
-                auto & query_list = husky::ObjListStore::create_objlist<QueryType>();
                 loadQueries(query_list, setItem, infmt);
                 
-                husky::list_execute(query_list, [](QueryType& query) {
-                        });
-                std::cout << "query size : " << query_list.get_size() <<std::endl;
 
                 if (husky::Context::get_global_tid() == 0)
                     husky::LOG_I << "[broadcast] start" << std::endl;
-                
+
+
+                // 1. boadcast queries to each machine
                 std::function<void(ItemIdType&, std::vector<ItemElementType>& )> query_handler =
                     [](ItemIdType& first, std::vector<ItemElementType>& second){
                         insertQueryVector(first, second);
                     };
-                
                 broadcastQueries(query_handler, query_list);
 
-                std::cout << "query map size : " << getIdToQueryMap().size() <<std::endl;
 
+                // 2. each thread calculate distance between queries and thread own items.
                 if (husky::Context::get_global_tid() == 0)
                     husky::LOG_I << "[calculate] start calculate distance and send distance to queries" << std::endl;
 
                 auto& item2queryChannel = husky::ChannelStore::create_push_channel<
                         AnswerMsg>(item_list, query_list);
-
-
-                auto& _idToQueryVector = getIdToQueryMap();
-
+                auto& _idToQueryVector = getIdToQueryMap(); // queries are save in a thread-shared map
                 husky::list_execute(
                         item_list,
                         [&](ItemType& item) {
@@ -106,12 +88,14 @@ namespace husky {
                         }
                 );
 
+
+                // 3. each query receive distances and choose topK
                 if (husky::Context::get_global_tid() == 0)
                     husky::LOG_I << "[receive] receive distance and choose topK" << std::endl;
                 
                 husky::list_execute(
                         query_list,
-                        [&](QueryType& query) {
+                        [&](QueryType& query) { // just a funtion of fix sized max heap
                            
                             TopKQueueType& topKQueue = topKQueues[query.id()];
                             
@@ -129,6 +113,8 @@ namespace husky {
                             }
                         }
                 );
+
+                // 4. save result
                 for (auto iter = topKQueues.begin(); iter != topKQueues.end(); ++iter) {
                     ItemIdType queryId = iter->first;
                     TopKQueueType& topKRecords = iter->second;
