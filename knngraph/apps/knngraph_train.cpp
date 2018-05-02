@@ -15,9 +15,9 @@
 #include "adjobject.h"
 #include "dataadjhandler.h"
 #include "knnagg.h"
+#include "block.h"
 // #include "knngraph_train.h"
 // #include "knnloader.h"
-// #include "block.h"
 using namespace husky::losha;
 using std::vector;
 using std::pair;
@@ -59,8 +59,8 @@ void knngraph_train() {
         AdjObject::clustering(adj_list, numHops);
 
         // 2. build block_list and train
-        // 
-        // train(block_list);
+        // #cc = #blocks
+        Block::train(adj_list, data_list);
 
         // 3. get recall
         // cal_sample_avgrecall();

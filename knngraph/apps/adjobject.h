@@ -29,6 +29,16 @@ public:
         _trueKNN = trueKNN;
     }
 
+    vector<int> getNB() {
+        vector<int> nbs;
+        for (const auto& p : _foundKNN) {
+            nbs.push_back(p.first);
+        }
+        for (auto rNB : _rKNN) {
+            nbs.push_back(rNB);
+        }
+        return nbs;
+    }
     static void initFromLSHBOX(
         const string& lshboxPath, 
         husky::ObjList<AdjObject>& adj_list,
