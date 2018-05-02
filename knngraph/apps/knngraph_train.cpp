@@ -5,63 +5,65 @@
 #include <utility>
 
 #include "core/engine.hpp"
+#include "base/log.hpp"
 #include "io/input/inputformat_store.hpp"
 
 #include "lshcore/densevector.hpp"
 #include "lshcore/loader/loader.h"
 
-#include "knnvertex.h"
-#include "knnloader.h"
+#include "dataobject.h"
+#include "adjobject.h"
+#include "dataadjhandler.h"
 #include "knnagg.h"
-#include "knngraph_train.h"
-#include "block.h"
+// #include "knngraph_train.h"
+// #include "knnloader.h"
+// #include "block.h"
 using namespace husky::losha;
 using std::vector;
 using std::pair;
 using std::string;
 
 void knngraph_train() {
-
     // initialization
     int dimension = std::stoi(husky::Context::get_param("dimension"));
     std::string itemPath = husky::Context::get_param("item_path");
     std::string sampleGroundtruthPath = husky::Context::get_param("sample_groundtruth_path");
     int maxIteration = std::stoi(husky::Context::get_param("max_iteration")); 
     int blockPerThread = std::stoi(husky::Context::get_param("block_per_thread"));
+    int numHops = std::stoi(husky::Context::get_param("num_hop"));
 
     typedef float FeatureType;
     // load items
-    auto & item_list =
-        husky::ObjListStore::create_objlist<KNNVertex<FeatureType>>();
+    auto & data_list =
+        husky::ObjListStore::create_objlist<DataObject<FeatureType>>();
 
-    loadIdFvecs(item_list, itemPath, dimension);
+    DataObject<FeatureType>::loadIdFvecs(data_list, itemPath, dimension);
 
-    // load groundtruth
-    loadSampleGroundtruth(sampleGroundtruthPath, item_list);
+    // initi adj_list, assume the id ranges from 0 - n - 1, load groundtruth
+    auto & adj_list =
+        husky::ObjListStore::create_objlist<AdjObject>();
 
-    // initialize knngraph, assume the id ranges from 0 to n - 1
-    int maxItemId = count(item_list) - 1;
-    husky::list_execute(item_list,
-        [&maxItemId](KNNVertex<FeatureType>& item){
-        item.initFoundKNN(maxItemId);
-    });
+    int maxItemId = count(data_list) - 1;
+    DataAdjHandler::buildAdjFromData(data_list, adj_list, sampleGroundtruthPath, maxItemId);
 
-    // initialize block 
-    auto & block_list =
-        husky::ObjListStore::create_objlist<Block<FeatureType>>();
-    initBlocks(blockPerThread, block_list);
+    // // initialize block 
+    // auto & block_list =
+    //     husky::ObjListStore::create_objlist<Block<FeatureType>>();
+    // initBlocks(blockPerThread, block_list);
 
     // iteration
     for (int i = 0; i < maxIteration; ++i) {
+        // build reverse kNN
         // train
         // 1. clustering
-        clustering(item_list, block_list);
+        AdjObject::clustering(adj_list, numHops);
 
-        // 2. getItem and train
+        // 2. build block_list and train
+        // 
+        // train(block_list);
 
-        // 3. all-pair comparison
-
-        // get recall
+        // 3. get recall
+        // cal_sample_avgrecall();
     }
 }
 
