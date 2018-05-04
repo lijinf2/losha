@@ -59,6 +59,45 @@ public:
         husky::ObjList<DataObject<ItemElementType>>& data_list);
     
 private:
+    static void reportBlockAndNumRequestItems(
+        husky::ObjList<Block>& block_list) {
+        // debug information
+        vector<pair<int, int>> agg =
+            keyValueCombine<Block, int, int, husky::SumCombiner<int>>(
+                block_list,
+                [](const Block& blk){ return blk.id();},
+                [](const Block& blk){ return blk.calRequestDataId().size();});
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << "report (block_id, num_request_items)" << std::endl;
+            std::sort(
+                agg.begin(),
+                agg.end(),
+                [](const pair<int, int>& a, const pair<int, int>&b){
+                    return a.second > b.second;
+                });
+            for (int i = 0; i < agg.size(); ++i) {
+                husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
+            }
+        }
+    }
+
+    static unsigned getNumTotalRequestItems(
+        husky::ObjList<Block>& block_list) {
+        husky::lib::Aggregator<unsigned> sum(
+            0,
+            [](unsigned &a, const unsigned &b) { a = a + b;});
+
+        auto& ac = husky::lib::AggregatorFactory::get_channel();
+        husky::list_execute(
+            block_list,
+            {},
+            {&ac},
+            [&sum](Block& blk){
+            sum.update(blk.calRequestDataId().size());
+        });
+
+        return sum.get_value();
+    }
 };
 
 template<typename ItemElementType>
@@ -90,6 +129,12 @@ void Block::train(
         [&load_channel](Block& blk) {
             blk._records = load_channel.get(blk);
         });
+
+    // every thread should execute getNumTotalRequestItems
+    int numTotalRequests = getNumTotalRequestItems(block_list);
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "Total number of requests is " << numTotalRequests << std::endl;
+    }
     // get item and local join
     auto& request_channel = 
         husky::ChannelStore::create_push_channel<int>(block_list, data_list);
@@ -103,25 +148,6 @@ void Block::train(
                 request_channel.push(blk.id(), itemId);
             }
         });
-
-    // debug information
-    vector<pair<int, int>> agg =
-        keyValueAgg<Block, int, int, husky::SumCombiner<int>>(
-            block_list,
-            [](const Block& blk){ return blk.id();},
-            [](const Block& blk){ return blk.calRequestDataId().size();});
-    if (husky::Context::get_global_tid() == 0) {
-        husky::LOG_I << "report (block_id, num_request_items)" << std::endl;
-        // std::sort(
-        //     agg.begin(),
-        //     agg.end(),
-        //     [](const pair<int, int>& a, const pair<int, int>&b){
-        //         return a.second > b.second;
-        //     });
-        for (int i = 0; i < agg.size(); ++i) {
-            husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
-        }
-    }
 
     typedef DenseVector<int, ItemElementType> DV;
     auto& response_channel = 

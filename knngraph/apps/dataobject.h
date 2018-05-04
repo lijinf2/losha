@@ -29,6 +29,9 @@ void DataObject<ItemElementType>::loadIdFvecs(
     husky::ObjList<DataObject<ItemElementType>>& obj_list,
     const string& itemPath, 
     int dimension) {
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "start loading from itemPath: " << itemPath << std::endl;
+    }
 
     int BytesPerVector = dimension * sizeof(ItemElementType) + 8;
     auto& binaryInputFormat = husky::io::InputFormatStore::create_chunk_inputformat(BytesPerVector); 

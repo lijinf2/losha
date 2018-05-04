@@ -29,7 +29,7 @@ unsigned count(
 
 // key value aggregator of max, min, sum 
 template<typename ObjT, typename KeyType, typename ValueType, typename CombinerType>
-vector<pair<KeyType, ValueType>> keyValueAgg(
+vector<pair<KeyType, ValueType>> keyValueCombine(
     husky::ObjList<ObjT>& obj_list,
     std::function<KeyType(const ObjT&)> getKey,
     std::function<ValueType(const ObjT&)> getValue) {

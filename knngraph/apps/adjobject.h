@@ -52,6 +52,7 @@ public:
             adj_list,
             [&maxItemId, &numNBPerNode](AdjObject& adj) {
                 adj.randomInitFoundKNN(maxItemId, numNBPerNode);
+
             });
         updateRKNN(adj_list);
     }
@@ -68,7 +69,40 @@ public:
         husky::ObjList<AdjObject>& adj_list, 
         int numHops);
 
+    static void randomClustering(
+        husky::ObjList<AdjObject>& adj_list, 
+        unordered_set<unsigned> labels,
+        int numHops);
+
+    // statistics
+    static unsigned getSizeRKNNMaxMin(
+        husky::ObjList<AdjObject>& adj_list);
+
 private:
+    static void reportClustering(
+        husky::ObjList<AdjObject>& adj_list) {
+        // report number of clusters 
+
+        vector<pair<int, int>> agg =
+            keyValueCombine<AdjObject, int, int, husky::SumCombiner<int>>(
+                adj_list,
+                [](const AdjObject& v){ return v._label;},
+                [](const AdjObject& v){ return 1;});
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << "number of clusters is " << agg.size() << std::endl;
+            husky::LOG_I << "present cluster_id and size in (cluster_id, size)" << std::endl;
+            std::sort(
+                agg.begin(),
+                agg.end(),
+                [](const pair<int, int>& a, const pair<int, int>&b){
+                    return a.second > b.second;
+                });
+            for (int i = 0; i < agg.size(); ++i) {
+                husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
+            }
+        }
+    }
+
     template<typename ChannelType>
     void propagateLabel(ChannelType& ch) {
         for (const auto& p : _foundKNN) {
@@ -100,6 +134,7 @@ private:
                 _foundKNN.emplace_back(std::make_pair(genId, maxDist));
             }
         }
+
     }
 };
 
@@ -213,29 +248,7 @@ void AdjObject::clustering(
     }
 
     // report number of clusters 
-
-    vector<pair<int, int>> agg =
-        keyValueAgg<AdjObject, int, int, husky::SumCombiner<int>>(
-            adj_list,
-            [](const AdjObject& v){ return v._label;},
-            [](const AdjObject& v){ return 1;});
-    if (husky::Context::get_global_tid() == 0) {
-        husky::LOG_I << "number of clusters is " << agg.size() << std::endl;
-        husky::LOG_I << "present cluster_id and size in (cluster_id, size)" << std::endl;
-        std::sort(
-            agg.begin(),
-            agg.end(),
-            [](const pair<int, int>& a, const pair<int, int>&b){
-                return a.second > b.second;
-            });
-        for (int i = 0; i < agg.size(); ++i) {
-            husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
-        }
-    }
-    // calNumBlocks and size
-    // husky::list_execute(adj_list, [](AdjObject& v) {
-    //     husky::LOG_I << "adj: " << v.id() << " component id: " << v._label << std::endl;
-    // });
+    reportClustering(adj_list);
 }
 
 void AdjObject::clustering(
@@ -269,29 +282,57 @@ void AdjObject::clustering(
     }
 
     // report number of clusters 
+    reportClustering(adj_list);
+}
 
-    vector<pair<int, int>> agg =
-        keyValueAgg<AdjObject, int, int, husky::SumCombiner<int>>(
-            adj_list,
-            [](const AdjObject& v){ return v._label;},
-            [](const AdjObject& v){ return 1;});
-    if (husky::Context::get_global_tid() == 0) {
-        husky::LOG_I << "number of clusters is " << agg.size() << std::endl;
-        husky::LOG_I << "present cluster_id and size in (cluster_id, size)" << std::endl;
-        std::sort(
-            agg.begin(),
-            agg.end(),
-            [](const pair<int, int>& a, const pair<int, int>&b){
-                return a.second > b.second;
-            });
-        for (int i = 0; i < agg.size(); ++i) {
-            husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
-        }
+void AdjObject::randomClustering(
+    husky::ObjList<AdjObject>& adj_list, 
+    unordered_set<unsigned> labels,
+    int numHops) {
+
+    vector<int> labelsVec;
+    labelsVec.reserve(labels.size());
+    for (auto e : labels) {
+        labelsVec.push_back(e);
     }
-    // calNumBlocks and size
-    // husky::list_execute(adj_list, [](AdjObject& v) {
-    //     husky::LOG_I << "adj: " << v.id() << " component id: " << v._label << std::endl;
-    // });
+    
+    auto& msgCh =
+            husky::ChannelStore::create_push_channel<int>(adj_list, adj_list);
+    husky::list_execute(
+        adj_list,
+        {},
+        {&msgCh},
+        [&msgCh, &labelsVec](AdjObject& adj){
+            adj._label = labelsVec[adj.id() % labelsVec.size()];
+    });
+
+    reportClustering(adj_list);
+
+}
+
+unsigned AdjObject::getSizeRKNNMaxMin(
+    husky::ObjList<AdjObject>& adj_list) {
+    // report number of clusters 
+
+    // vector<pair<int, int>> agg =
+    //     keyValueCombine<AdjObject, int, int, husky::MaxCombiner<int>>(
+    //         adj_list,
+    //         [](const AdjObject& v){ return v._label;},
+    //         [](const AdjObject& v){ return 1;});
+    // if (husky::Context::get_global_tid() == 0) {
+    //     husky::LOG_I << "number of clusters is " << agg.size() << std::endl;
+    //     husky::LOG_I << "present cluster_id and size in (cluster_id, size)" << std::endl;
+    //     std::sort(
+    //         agg.begin(),
+    //         agg.end(),
+    //         [](const pair<int, int>& a, const pair<int, int>&b){
+    //             return a.second > b.second;
+    //         });
+    //     for (int i = 0; i < agg.size(); ++i) {
+    //         husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
+    //     }
+    // }
+    return 0;
 }
 }
 }
