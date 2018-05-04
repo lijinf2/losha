@@ -13,7 +13,8 @@ public:
         husky::ObjList<DataObject<ItemElementType>>& data_list,
         husky::ObjList<AdjObject>& adj_list,
         const string& lshboxPath,
-        int maxItemId) {
+        int maxItemId,
+        int numNBPerNode) {
 
         // create adj_list
         
@@ -37,7 +38,7 @@ public:
             });
 
         // initilize adj_list, load groundtruth and random assign nbs
-        AdjObject::initFromLSHBOX(lshboxPath, adj_list, maxItemId);
+        AdjObject::initFromLSHBOX(lshboxPath, adj_list, maxItemId, numNBPerNode);
 
     }
 

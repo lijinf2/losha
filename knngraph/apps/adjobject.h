@@ -3,10 +3,12 @@
 #include <utility>
 #include <random>
 #include <unordered_set>
+#include <algorithm>
 #include "dataobject.h"
 #include "knnagg.h"
 using std::vector;
 using std::pair;
+using std::unordered_set;
 
 namespace husky {
 namespace losha {
@@ -15,6 +17,7 @@ class AdjObject{
 public:
     using KeyT = int;
     KeyT _vid;
+    // only sampled objects in lshbox file will have _trueKNN, other points have no _true_KNN;
     vector<pair<int, float>> _trueKNN;
     vector<pair<int, float>> _foundKNN;
 
@@ -42,12 +45,13 @@ public:
     static void initFromLSHBOX(
         const string& lshboxPath, 
         husky::ObjList<AdjObject>& adj_list,
-        int maxItemId) {
+        int maxItemId,
+        int numNBPerNode) {
         loadSampleGroundtruth(lshboxPath, adj_list);
         husky::list_execute(
             adj_list,
-            [&maxItemId](AdjObject& adj) {
-                adj.randomInitFoundKNN(maxItemId);
+            [&maxItemId, &numNBPerNode](AdjObject& adj) {
+                adj.randomInitFoundKNN(maxItemId, numNBPerNode);
             });
         updateRKNN(adj_list);
     }
@@ -57,32 +61,38 @@ public:
 
     static void clustering(
         husky::ObjList<AdjObject>& adj_list, 
+        unordered_set<unsigned> labels,
         int numHops);
+
+    static void clustering(
+        husky::ObjList<AdjObject>& adj_list, 
+        int numHops);
+
 private:
     template<typename ChannelType>
     void propagateLabel(ChannelType& ch) {
         for (const auto& p : _foundKNN) {
-            if (p.first > _label) 
-                ch.push(_label, p.first);
+             ch.push(_label, p.first);
         }
         for (auto rNB : _rKNN) {
-            if (rNB > _label) {
-                ch.push(_label, rNB);
-            }
+            ch.push(_label, rNB);
         }
     }
     static void loadSampleGroundtruth(
         const string& inputPath, 
         husky::ObjList<AdjObject>& obj_list);
 
-    void randomInitFoundKNN(int maxItemId) {
+    void randomInitFoundKNN(
+        int maxItemId,
+        int numNBPerNode) {
+
         std::default_random_engine generator(_vid);
         std::uniform_int_distribution<unsigned> distribution(0, maxItemId - 1);
 
         std::unordered_set<unsigned> inserted;
         float maxDist = std::numeric_limits<float>::max();
 
-        while(_foundKNN.size() < _trueKNN.size()) {
+        while(_foundKNN.size() < numNBPerNode) {
             unsigned genId = distribution(generator);
             if (genId != _vid
                 && inserted.find(genId) == inserted.end()) {
@@ -171,9 +181,69 @@ void AdjObject::updateRKNN(
 
 void AdjObject::clustering(
     husky::ObjList<AdjObject>& adj_list, 
+    unordered_set<unsigned> labels,
     int numHops) {
 
     // cal cc until there are approximate cc blocks 
+    
+    auto& msgCh =
+            husky::ChannelStore::create_push_channel<int>(adj_list, adj_list);
+    husky::list_execute(
+        adj_list,
+        {},
+        {&msgCh},
+        [&msgCh, &labels](AdjObject& adj){
+            if (labels.find(adj.id()) != labels.end() ) {
+                adj.propagateLabel(msgCh);
+            }
+    });
+
+    for (int i = 0; i < numHops; ++i) {
+        husky::list_execute(
+            adj_list,
+            {&msgCh},
+            {&msgCh},
+            [&msgCh](AdjObject& adj){
+            const vector<int>& msgs = msgCh.get(adj); 
+            if (msgs.size() != 0 && adj._label == adj.id()) {
+                adj._label = msgs[adj.id() % msgs.size()];
+                adj.propagateLabel(msgCh);
+            }
+        });
+    }
+
+    // report number of clusters 
+
+    vector<pair<int, int>> agg =
+        keyValueAgg<AdjObject, int, int, husky::SumCombiner<int>>(
+            adj_list,
+            [](const AdjObject& v){ return v._label;},
+            [](const AdjObject& v){ return 1;});
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "number of clusters is " << agg.size() << std::endl;
+        husky::LOG_I << "present cluster_id and size in (cluster_id, size)" << std::endl;
+        std::sort(
+            agg.begin(),
+            agg.end(),
+            [](const pair<int, int>& a, const pair<int, int>&b){
+                return a.second > b.second;
+            });
+        for (int i = 0; i < agg.size(); ++i) {
+            husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
+        }
+    }
+    // calNumBlocks and size
+    // husky::list_execute(adj_list, [](AdjObject& v) {
+    //     husky::LOG_I << "adj: " << v.id() << " component id: " << v._label << std::endl;
+    // });
+}
+
+void AdjObject::clustering(
+    husky::ObjList<AdjObject>& adj_list, 
+    int numHops) {
+
+    // cal cc until there are approximate cc blocks 
+    
     auto& msgCh =
             husky::ChannelStore::create_push_combined_channel<int, husky::MinCombiner<int>>(adj_list, adj_list);
     husky::list_execute(
@@ -208,9 +278,15 @@ void AdjObject::clustering(
     if (husky::Context::get_global_tid() == 0) {
         husky::LOG_I << "number of clusters is " << agg.size() << std::endl;
         husky::LOG_I << "present cluster_id and size in (cluster_id, size)" << std::endl;
-        // for (int i = 0; i < agg.size(); ++i) {
-        //     husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
-        // }
+        std::sort(
+            agg.begin(),
+            agg.end(),
+            [](const pair<int, int>& a, const pair<int, int>&b){
+                return a.second > b.second;
+            });
+        for (int i = 0; i < agg.size(); ++i) {
+            husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
+        }
     }
     // calNumBlocks and size
     // husky::list_execute(adj_list, [](AdjObject& v) {

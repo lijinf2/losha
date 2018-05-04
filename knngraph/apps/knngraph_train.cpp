@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <unordered_set>
 
 #include "core/engine.hpp"
 #include "base/log.hpp"
@@ -10,6 +11,7 @@
 
 #include "lshcore/densevector.hpp"
 #include "lshcore/loader/loader.h"
+#include "gqr/util/random.h"
 
 #include "dataobject.h"
 #include "adjobject.h"
@@ -22,6 +24,7 @@ using namespace husky::losha;
 using std::vector;
 using std::pair;
 using std::string;
+using std::unordered_set;
 
 void knngraph_train() {
     // initialization
@@ -29,8 +32,9 @@ void knngraph_train() {
     std::string itemPath = husky::Context::get_param("item_path");
     std::string sampleGroundtruthPath = husky::Context::get_param("sample_groundtruth_path");
     int maxIteration = std::stoi(husky::Context::get_param("max_iteration")); 
-    int blockPerThread = std::stoi(husky::Context::get_param("block_per_thread"));
+    int numBlocks = std::stoi(husky::Context::get_param("num_block"));
     int numHops = std::stoi(husky::Context::get_param("num_hop"));
+    int numNBPerNode = std::stoi(husky::Context::get_param("K"));
 
     typedef float FeatureType;
     // load items
@@ -43,20 +47,17 @@ void knngraph_train() {
     auto & adj_list =
         husky::ObjListStore::create_objlist<AdjObject>();
 
-    int maxItemId = count(data_list) - 1;
-    DataAdjHandler::buildAdjFromData(data_list, adj_list, sampleGroundtruthPath, maxItemId);
+    int numData = count(data_list);
+    int maxItemId = numData - 1;
+    DataAdjHandler::buildAdjFromData(data_list, adj_list, sampleGroundtruthPath, maxItemId, numNBPerNode);
 
-    // // initialize block 
-    // auto & block_list =
-    //     husky::ObjListStore::create_objlist<Block<FeatureType>>();
-    // initBlocks(blockPerThread, block_list);
-
+    unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
     // iteration
     for (int i = 0; i < maxIteration; ++i) {
         // build reverse kNN
         // train
         // 1. clustering
-        AdjObject::clustering(adj_list, numHops);
+        AdjObject::clustering(adj_list, labels, numHops);
 
         // 2. build block_list and train
         // #cc = #blocks

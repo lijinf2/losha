@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+#include "base/log.hpp"
 #include "core/engine.hpp"
 #include "adjobject.h"
 #include "dataobject.h"
@@ -42,6 +43,16 @@ public:
 
     vector<AdjRecord> _records;
 
+    unordered_set<int> calRequestDataId() const { 
+        unordered_set<int> requested;
+        for (const auto& record : _records) {
+            for (auto itemId : record._nbs) {
+                if (requested.find(itemId) == requested.end())
+                    requested.insert(itemId);
+            }
+        }
+        return requested;
+    }
     template<typename ItemElementType>
     static void train(
         husky::ObjList<AdjObject>& adj_list,
@@ -87,14 +98,34 @@ void Block::train(
         {},
         {&request_channel},
         [&request_channel](Block& blk) {
-            for (const auto& record : blk._records) {
-                for (auto itemId : record._nbs) {
-                    request_channel.push(blk.id(), itemId);
-                }
+            auto requested = blk.calRequestDataId();
+            for (auto itemId : requested) {
+                request_channel.push(blk.id(), itemId);
             }
         });
+
+    // debug information
+    vector<pair<int, int>> agg =
+        keyValueAgg<Block, int, int, husky::SumCombiner<int>>(
+            block_list,
+            [](const Block& blk){ return blk.id();},
+            [](const Block& blk){ return blk.calRequestDataId().size();});
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "report (block_id, num_request_items)" << std::endl;
+        // std::sort(
+        //     agg.begin(),
+        //     agg.end(),
+        //     [](const pair<int, int>& a, const pair<int, int>&b){
+        //         return a.second > b.second;
+        //     });
+        for (int i = 0; i < agg.size(); ++i) {
+            husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
+        }
+    }
+
+    typedef DenseVector<int, ItemElementType> DV;
     auto& response_channel = 
-        husky::ChannelStore::create_push_channel<DenseVector<int, ItemElementType>>(data_list, block_list);
+        husky::ChannelStore::create_push_channel<DV>(data_list, block_list);
 
     husky::list_execute(
         data_list,
@@ -102,22 +133,28 @@ void Block::train(
         {&response_channel},
         [&request_channel, &response_channel](DataObject<ItemElementType>& data) {
             const auto& msgs = request_channel.get(data);
-            unordered_set<int> visited;
+            // unordered_set<int> visited;
             for (auto bid : msgs) {
-                if (visited.find(bid) == visited.end()) { 
-                    visited.insert(bid);
+                // if (visited.find(bid) == visited.end()) { 
+                //     visited.insert(bid);
                     response_channel.push(data.getItem(), bid);
-                }
+                // }
             }
         });
 
-    //@ avoid three copies of the dataset, probably write disk and then read disk
+    // //@ avoid three copies of the dataset, probably write disk and then read disk
     husky::list_execute(
         block_list,
+        {&response_channel},
         {},
-        {},
-        [](Block& blk){
-            unordered_map<int, const vector<ItemElementType>*> map;
+        [&response_channel](Block& blk){
+            const auto& msgs = response_channel.get(blk);
+            int numRequestItems = msgs.size();
+            // unordered_map<int, const vector<ItemElementType>*> idToVector;
+            // for (const DV& data : msgs) {
+            //     idToVector[data.getItemId()] = &(data.getItemVector());
+            // }
+            // int size = idToVector.size();
         });
 }
 }
