@@ -9,4 +9,4 @@ if [ "$log" != "" ]; then
     exit
 fi
 
-../../build/knngraph_train --conf ../../conf/knngraph_train.conf
+gdb --args ../../build/knngraph_train --conf ../../conf/knngraph_train.conf

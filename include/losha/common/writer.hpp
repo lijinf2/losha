@@ -1,11 +1,14 @@
 #pragma once
 #include<string>
+#include <vector>
 #include<utility>
 #include "core/engine.hpp"
 #include "io/hdfs_manager.hpp"
 
 using std::string;
 using std::pair;
+using std::vector;
+
 namespace husky {
 namespace losha {
 
@@ -24,6 +27,18 @@ void writeHDFSTriplet(
     const string& namenodeKey, const string& portKey, const string& outputPathKey) {
     string text = std::to_string(queryId) + " ";
     text += std::to_string(itemId) + " " + std::to_string(distance) + "\n";
+    writeHDFS(text, namenodeKey, portKey, outputPathKey);
+}
+
+template<typename ElementType>
+void writeHDFSVector(
+    const vector<ElementType>& vec,
+    const string& namenodeKey, const string& portKey, const string& outputPathKey) {
+    string text = "";
+    for (int i = 0; i < vec.size(); ++i) {
+        text += " ";
+        text += std::to_string(vec[i]);
+    }
     writeHDFS(text, namenodeKey, portKey, outputPathKey);
 }
 

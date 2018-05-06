@@ -88,5 +88,67 @@ vector<pair<KeyType, ValueType>> keyValueCombine(
     husky::lib::AggregatorFactory::sync();
     return key_value_agg.get_value();
 }
+
+template<typename ObjT, typename KeyType, typename ValueType>
+pair<KeyType, ValueType> keyValueAggMax(
+    husky::ObjList<ObjT>& obj_list,
+    std::function<pair<KeyType, ValueType>(const ObjT&)> getKeyValue) {
+
+    husky::lib::Aggregator<pair<KeyType, ValueType>> maxAgg(
+        std::make_pair(0, std::numeric_limits<ValueType>::min()), 
+        [](pair<KeyType, ValueType>& a, const pair<KeyType, ValueType>& b){ 
+            if (a.second < b.second) a = b; },
+        [](pair<KeyType, ValueType>& p){
+            p = std::make_pair(0, std::numeric_limits<ValueType>::min());
+        });
+
+    auto& maxCh = husky::lib::AggregatorFactory::get_channel();
+    husky::list_execute(
+        obj_list, {}, {&maxCh}, [&maxAgg, &getKeyValue](ObjT& obj) {
+        maxAgg.update(getKeyValue(obj));
+    });
+    return maxAgg.get_value();
+}
+
+template<typename ObjT, typename KeyType, typename ValueType>
+pair<KeyType, ValueType> keyValueAggMin(
+    husky::ObjList<ObjT>& obj_list,
+    std::function<pair<KeyType, ValueType>(const ObjT&)> getKeyValue) {
+
+    husky::lib::Aggregator<pair<KeyType, ValueType>> minAgg(
+        pair<KeyType, ValueType>(-1, std::numeric_limits<ValueType>::max()), 
+        [](pair<KeyType, ValueType>& a, const pair<KeyType, ValueType>& b){ 
+            if (a.second > b.second) a = b;
+    },  [](pair<KeyType, ValueType>& p) {
+            p = pair<KeyType, ValueType>(-1, std::numeric_limits<ValueType>::max());
+    });
+
+    auto& ch = husky::lib::AggregatorFactory::get_channel();
+    husky::list_execute(
+        obj_list, {}, {&ch}, [&minAgg, &getKeyValue](ObjT& obj) {
+        auto p = getKeyValue(obj);
+        minAgg.update(p);
+    });
+    return minAgg.get_value();
+}
+
+template<typename ObjT, typename ValueType>
+ValueType sumAgg (
+    husky::ObjList<ObjT>& obj_list,
+    std::function<ValueType(ObjT&)> getValue) {
+    husky::lib::Aggregator<ValueType> sumAgg(0, [](ValueType& a, const ValueType& b) { a += b; });
+    husky::list_execute(
+        obj_list, 
+        {},
+        {},
+        [&sumAgg, &getValue](ObjT& obj){
+
+        sumAgg.update(getValue(obj));
+    });
+    husky::lib::AggregatorFactory::sync();
+    return sumAgg.get_value();
+} 
+
+
 }
 }

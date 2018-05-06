@@ -2,8 +2,11 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+
 #include "base/log.hpp"
 #include "core/engine.hpp"
+
+#include "losha/common/distor.hpp"
 #include "adjobject.h"
 #include "dataobject.h"
 using std::vector;
@@ -169,19 +172,50 @@ void Block::train(
         });
 
     // //@ avoid three copies of the dataset, probably write disk and then read disk
+    auto& result_channel = 
+        husky::ChannelStore::create_push_channel<pair<int, float>>(block_list, adj_list);
     husky::list_execute(
         block_list,
         {&response_channel},
-        {},
-        [&response_channel](Block& blk){
+        {&result_channel},
+        [&response_channel, &result_channel](Block& blk){
+            // build mapping
             const auto& msgs = response_channel.get(blk);
-            int numRequestItems = msgs.size();
-            // unordered_map<int, const vector<ItemElementType>*> idToVector;
-            // for (const DV& data : msgs) {
-            //     idToVector[data.getItemId()] = &(data.getItemVector());
-            // }
-            // int size = idToVector.size();
+            unordered_map<int, const vector<ItemElementType>*> idToVector;
+            for (const DV& data : msgs) {
+                idToVector[data.getItemId()] = &(data.getItemVector());
+            }
+            // all pair training inside each record
+            pair<int, float> sentMsg;
+            for (const AdjRecord& record : blk._records) {
+                for (int i = 0; i < record._nbs.size(); ++i) {
+                    int leftId = record._nbs[i];
+
+                    for (int j = i + 1; j < record._nbs.size(); ++j) {
+                        int rightId = record._nbs[j];
+
+                        float dist = calE2Dist(*(idToVector[leftId]), *(idToVector[rightId]));
+
+                        sentMsg = std::make_pair(rightId, dist);
+                        result_channel.push(sentMsg, leftId);
+
+                        sentMsg = std::make_pair(leftId, dist);
+                        result_channel.push(sentMsg, rightId);
+                    }
+                }
+            }
         });
+
+    // update adj_list by result_channel
+    husky::list_execute(
+        adj_list,
+        {&result_channel},
+        {},
+        [&result_channel](AdjObject& adj){
+        const vector<pair<int, float>>& msgs = result_channel.get(adj);
+        adj.mergeFoundKNN(msgs);
+    });
 }
+
 }
 }

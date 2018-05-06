@@ -4,8 +4,13 @@
 #include <random>
 #include <unordered_set>
 #include <algorithm>
+#include <limits>
+
+#include "gqr/util/cal_groundtruth.h"
+
 #include "dataobject.h"
 #include "knnagg.h"
+using lshbox::TopK;
 using std::vector;
 using std::pair;
 using std::unordered_set;
@@ -32,6 +37,22 @@ public:
         _trueKNN = trueKNN;
     }
 
+    void mergeFoundKNN(const vector<pair<int, float>>& msgs) {
+        unordered_set<int> visited;
+        TopK topk(_foundKNN.size());
+        for (auto p : _foundKNN) {
+            if (visited.find(p.first) != visited.end()) continue;
+            visited.insert(p.first);
+            topk.insert(p);
+        }
+        for (auto p : msgs) {
+            if (visited.find(p.first) != visited.end()) continue;
+            visited.insert(p.first);
+            topk.insert(p);
+        }
+        _foundKNN = topk.getTopKPairs();
+    }
+
     vector<int> getNB() {
         vector<int> nbs;
         for (const auto& p : _foundKNN) {
@@ -42,6 +63,7 @@ public:
         }
         return nbs;
     }
+
     static void initFromLSHBOX(
         const string& lshboxPath, 
         husky::ObjList<AdjObject>& adj_list,
@@ -60,25 +82,43 @@ public:
     static void updateRKNN(
         husky::ObjList<AdjObject>& adj_list);
 
-    static void clustering(
+    static void bfsClustering(
         husky::ObjList<AdjObject>& adj_list, 
-        unordered_set<unsigned> labels,
-        int numHops);
+        unordered_set<unsigned> labels);
 
-    static void clustering(
+    static void ccclustering(
         husky::ObjList<AdjObject>& adj_list, 
         int numHops);
 
     static void randomClustering(
         husky::ObjList<AdjObject>& adj_list, 
-        unordered_set<unsigned> labels,
-        int numHops);
+        unordered_set<unsigned> labels);
 
-    // statistics
-    static unsigned getSizeRKNNMaxMin(
+    // statistics, (vid, max, vid, min)
+    static vector<int> getRKNNSizeMaxMin(
+        husky::ObjList<AdjObject>& adj_list);
+
+    static float calSampleAvgRecall(
         husky::ObjList<AdjObject>& adj_list);
 
 private:
+    float getCurRecall() {
+        assert (_trueKNN.size() != 0);
+
+        unordered_set<int> trueIvecs;
+        for (auto p : _trueKNN) {
+            trueIvecs.insert(p.first);
+        }
+        int matched = 0;
+        for (auto p : _foundKNN) {
+            if (trueIvecs.find(p.first) != trueIvecs.end()) {
+                matched++;
+            }
+        }
+        float recall = (float) matched / (float) _foundKNN.size();
+        return recall;
+    }
+
     static void reportClustering(
         husky::ObjList<AdjObject>& adj_list) {
         // report number of clusters 
@@ -214,10 +254,9 @@ void AdjObject::updateRKNN(
         });
 }
 
-void AdjObject::clustering(
+void AdjObject::bfsClustering(
     husky::ObjList<AdjObject>& adj_list, 
-    unordered_set<unsigned> labels,
-    int numHops) {
+    unordered_set<unsigned> labels) {
 
     // cal cc until there are approximate cc blocks 
     
@@ -233,27 +272,63 @@ void AdjObject::clustering(
             }
     });
 
-    for (int i = 0; i < numHops; ++i) {
+
+    husky::lib::Aggregator<int> not_finished(0, [](int& a, const int& b) { a += b; });
+    not_finished.to_reset_each_iter();
+    not_finished.update(1);
+    auto& agg_ch = husky::lib::AggregatorFactory::get_channel();
+    husky::lib::AggregatorFactory::sync();
+    int iteration = 0;
+    while(not_finished.get_value()) {
         husky::list_execute(
             adj_list,
             {&msgCh},
-            {&msgCh},
-            [&msgCh](AdjObject& adj){
+            {&msgCh, &agg_ch},
+            [&msgCh, &not_finished](AdjObject& adj){
             const vector<int>& msgs = msgCh.get(adj); 
             if (msgs.size() != 0 && adj._label == adj.id()) {
-                adj._label = msgs[adj.id() % msgs.size()];
+
+                // int label = msgs[0];
+                // for (int i = 1; i < msgs.size(); ++i) {
+                //     if (msgs[i] < label) {
+                //         label = msgs[i];
+                //     }
+                // }
+                adj._label = *(std::min_element(msgs.begin(), msgs.end()));
                 adj.propagateLabel(msgCh);
+                not_finished.update(1);
             }
         });
+
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << "BFS Clustering finished iteration " << iteration << std::endl;
+        }
+        iteration++;
+    }
+
+    // get number of points that are not categorized
+    int numUnAssigned = 
+        sumAgg<AdjObject, int>(adj_list, [](AdjObject& adj){
+                if (adj._label == adj.id())
+                    return 1;
+                else 
+                    return 0;
+    });
+
+    if (numUnAssigned != 0) {
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << numUnAssigned << " records unassigned" << std::endl;
+        }
+        assert(false);
     }
 
     // report number of clusters 
     reportClustering(adj_list);
 }
 
-void AdjObject::clustering(
+void AdjObject::ccclustering(
     husky::ObjList<AdjObject>& adj_list, 
-    int numHops) {
+    int numHops = std::numeric_limits<int>::max()) {
 
     // cal cc until there are approximate cc blocks 
     
@@ -287,8 +362,7 @@ void AdjObject::clustering(
 
 void AdjObject::randomClustering(
     husky::ObjList<AdjObject>& adj_list, 
-    unordered_set<unsigned> labels,
-    int numHops) {
+    unordered_set<unsigned> labels) {
 
     vector<int> labelsVec;
     labelsVec.reserve(labels.size());
@@ -310,29 +384,58 @@ void AdjObject::randomClustering(
 
 }
 
-unsigned AdjObject::getSizeRKNNMaxMin(
+vector<int> AdjObject::getRKNNSizeMaxMin(
     husky::ObjList<AdjObject>& adj_list) {
-    // report number of clusters 
 
-    // vector<pair<int, int>> agg =
-    //     keyValueCombine<AdjObject, int, int, husky::MaxCombiner<int>>(
-    //         adj_list,
-    //         [](const AdjObject& v){ return v._label;},
-    //         [](const AdjObject& v){ return 1;});
-    // if (husky::Context::get_global_tid() == 0) {
-    //     husky::LOG_I << "number of clusters is " << agg.size() << std::endl;
-    //     husky::LOG_I << "present cluster_id and size in (cluster_id, size)" << std::endl;
-    //     std::sort(
-    //         agg.begin(),
-    //         agg.end(),
-    //         [](const pair<int, int>& a, const pair<int, int>&b){
-    //             return a.second > b.second;
-    //         });
-    //     for (int i = 0; i < agg.size(); ++i) {
-    //         husky::LOG_I << "(" << agg[i].first << ", " << agg[i].second << ")" << std::endl;
-    //     }
-    // }
-    return 0;
+    pair<int, unsigned> id_max =
+        keyValueAggMax<AdjObject, int, unsigned>(
+        adj_list, 
+        [] (const AdjObject& obj) {
+            return std::make_pair(obj.id(), obj._rKNN.size());});
+
+    pair<int, unsigned> id_min =
+        keyValueAggMin<AdjObject, int, unsigned>(
+        adj_list, 
+        [] (const AdjObject& obj) {
+            auto p = std::make_pair(obj.id(), obj._rKNN.size());
+            return p;}
+        );
+
+    vector<int> results;
+    results.push_back(id_max.first);
+    results.push_back(id_max.second);
+    results.push_back(id_min.first);
+    results.push_back(id_min.second);
+    return results;
+}
+
+float AdjObject::calSampleAvgRecall(
+    husky::ObjList<AdjObject>& adj_list) {
+
+    int numSamples = 
+        sumAgg<AdjObject, int> (
+            adj_list,
+            [](AdjObject& adj){
+                int loadedSize = adj._trueKNN.size();
+                if (loadedSize > 0)
+                    return 1;
+                else 
+                    return 0;
+            });
+
+    float sumRecall = 
+        sumAgg<AdjObject, float> (
+            adj_list,
+            [](AdjObject& adj){
+                float recall = 0;
+                if (adj._trueKNN.size() != 0) {
+                    recall = adj.getCurRecall();
+                }
+                return recall;
+        });
+
+    float avg_recall = sumRecall / numSamples;
+    return avg_recall;
 }
 }
 }

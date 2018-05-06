@@ -11,6 +11,7 @@
 
 #include "lshcore/densevector.hpp"
 #include "lshcore/loader/loader.h"
+#include "losha/common/writer.hpp"
 #include "gqr/util/random.h"
 
 #include "dataobject.h"
@@ -33,7 +34,7 @@ void knngraph_train() {
     std::string sampleGroundtruthPath = husky::Context::get_param("sample_groundtruth_path");
     int maxIteration = std::stoi(husky::Context::get_param("max_iteration")); 
     int numBlocks = std::stoi(husky::Context::get_param("num_block"));
-    int numHops = std::stoi(husky::Context::get_param("num_hop"));
+    // int numHops = std::stoi(husky::Context::get_param("num_hop"));
     int numNBPerNode = std::stoi(husky::Context::get_param("K"));
 
     typedef float FeatureType;
@@ -51,21 +52,44 @@ void knngraph_train() {
     int maxItemId = numData - 1;
     DataAdjHandler::buildAdjFromData(data_list, adj_list, sampleGroundtruthPath, maxItemId, numNBPerNode);
 
-    unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
+    // debug infor
+    // husky::list_execute(
+    //     adj_list, 
+    //     [](AdjObject& adj) {
+    //     string str = std::to_string(adj.id());
+    //     str += " ";
+    //     str += std::to_string(adj._foundKNN.size());
+    //     for (int i = 0; i < adj._foundKNN.size(); ++i) {
+    //         str += " ";  
+    //         str += std::to_string(adj._foundKNN[i].first);
+    //         // str += std::to_string(adj._rKNN[i]);
+    //     }
+    //     str += "\n";
+    //     writeHDFS(str, "hdfs_namenode", "hdfs_namenode_port", "tmp_output_path");
+    // });
+    // should debug
+    // auto tmp = AdjObject::getRKNNSizeMaxMin(adj_list);
+
     // iteration
+    unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
     for (int i = 0; i < maxIteration; ++i) {
         // build reverse kNN
         // train
         // 1. clustering
-        // AdjObject::randomClustering(adj_list, labels, numHops);
-        AdjObject::clustering(adj_list, labels, numHops);
+        // AdjObject::randomClustering(adj_list, labels);
+        
+        AdjObject::bfsClustering(adj_list, labels);
+        // AdjObject::ccclustering(adj_list, numHops);
 
         // 2. build block_list and train
         // #cc = #blocks
         Block::train(adj_list, data_list);
 
         // 3. get recall
-        // cal_sample_avgrecall();
+        float avgRecall = AdjObject::calSampleAvgRecall(adj_list);
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << "avg recall is " << avgRecall << std::endl;
+        }
     }
 }
 
@@ -77,6 +101,7 @@ int main(int argc, char ** argv) {
     args.push_back("item_path"); 
     args.push_back("sample_groundtruth_path"); 
     args.push_back("max_iteration"); 
+    args.push_back("tmp_output_path"); 
     if (husky::init_with_args(argc, argv, args)) {
         husky::run_job(knngraph_train);
         return 0;
