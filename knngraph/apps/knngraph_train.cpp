@@ -76,10 +76,9 @@ void knngraph_train() {
         // build reverse kNN
         // train
         // 1. clustering
-        // AdjObject::randomClustering(adj_list, labels);
+        AdjObject::randomClustering(adj_list, labels);
         
-        AdjObject::bfsClustering(adj_list, labels);
-        // AdjObject::ccclustering(adj_list, numHops);
+        // AdjObject::bfsClustering(adj_list, labels);
 
         // 2. build block_list and train
         // #cc = #blocks

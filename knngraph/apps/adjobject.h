@@ -315,13 +315,32 @@ void AdjObject::bfsClustering(
                     return 0;
     });
 
-    if (numUnAssigned != 0) {
-        if (husky::Context::get_global_tid() == 0) {
-            husky::LOG_I << numUnAssigned << " records unassigned" << std::endl;
+    // assigned unassinged vertices to the block with largest id
+    unsigned maxLabel = std::numeric_limits<unsigned>::min();
+    for (auto label : labels) {
+
+        if (label > maxLabel) {
+            maxLabel = label;
         }
-        assert(false);
+
     }
 
+    husky::list_execute(
+        adj_list,
+        {},
+        {},
+        [&maxLabel](AdjObject& adj){
+        if (adj._label == adj.id())
+            adj._label = maxLabel;
+    });
+
+    if (numUnAssigned != 0) {
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << numUnAssigned << " unassigned records are assigned to block " << maxLabel << std::endl;
+        }
+    }
+
+    
     // report number of clusters 
     reportClustering(adj_list);
 }
