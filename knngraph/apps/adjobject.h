@@ -28,6 +28,7 @@ public:
 
     vector<int> _rKNN;
     int _label;
+    unsigned char _state = 0;
 
     explicit AdjObject(const KeyT& id) : _vid(id), _label(id) {};
     const KeyT id() const {return _vid;};
@@ -86,10 +87,6 @@ public:
     static void bfsClustering(
         husky::ObjList<AdjObject>& adj_list, 
         unordered_set<unsigned> labels);
-
-    static void ccclustering(
-        husky::ObjList<AdjObject>& adj_list, 
-        int numHops);
 
     static void randomClustering(
         husky::ObjList<AdjObject>& adj_list, 
@@ -254,8 +251,8 @@ void AdjObject::loadSampleGroundtruth(
 void AdjObject::updateRKNN(
     husky::ObjList<AdjObject>& adj_list) {
      
-    auto& channel = AdjObject::getToAdjPushIntCH(adj_list);
-       // auto& channel = husky::ChannelStore::create_push_channel<int>(adj_list, adj_list);
+    // auto& channel = AdjObject::getToAdjPushIntCH(adj_list);
+    thread_local auto& channel = husky::ChannelStore::create_push_channel<int>(adj_list, adj_list);
 
     husky::list_execute(
         adj_list,
@@ -280,17 +277,18 @@ void AdjObject::bfsClustering(
     husky::ObjList<AdjObject>& adj_list, 
     unordered_set<unsigned> labels) {
 
+    AdjObject::resetLabels(adj_list);
     // cal cc until there are approximate cc blocks 
     
-    auto& msgCh = AdjObject::getToAdjPushIntCH(adj_list);
-    // auto& msgCh =
-    //         husky::ChannelStore::create_push_channel<int>(adj_list, adj_list);
+    thread_local auto& msgCh =
+            husky::ChannelStore::create_push_channel<int>(adj_list, adj_list);
     husky::list_execute(
         adj_list,
         {},
         {&msgCh},
         [&msgCh, &labels](AdjObject& adj){
             if (labels.find(adj.id()) != labels.end() ) {
+                adj._state = 1;
                 adj.propagateLabel(msgCh);
             }
     });
@@ -302,7 +300,7 @@ void AdjObject::bfsClustering(
     auto& agg_ch = husky::lib::AggregatorFactory::get_channel();
     husky::lib::AggregatorFactory::sync();
     int iteration = 0;
-    while(not_finished.get_value()) {
+    while(true) {
         // calculate block with minimum items
         husky::list_execute(
             adj_list,
@@ -310,95 +308,65 @@ void AdjObject::bfsClustering(
             {&msgCh, &agg_ch},
             [&msgCh, &not_finished](AdjObject& adj){
             vector<int> msgs = msgCh.get(adj); 
-            if (msgs.size() != 0 && adj._label == adj.id()) {
+            if (msgs.size() != 0 && adj._state == 0) {
+                adj._state = 1;
 
-                // assign to the smallest number
-                // adj._label = *(std::min_element(msgs.begin(), msgs.end()));
-                //
                 // assign to the k-th largest number
                 int k = adj.id() % msgs.size();
                 std::nth_element(msgs.begin(), msgs.begin() + k, msgs.end());
+                // std::sort(msgs.begin(), msgs.end());
                 adj._label = msgs[k];
                 adj.propagateLabel(msgCh);
                 not_finished.update(1);
             }
         });
-
+        int numNewAssigned = not_finished.get_value();
         if (husky::Context::get_global_tid() == 0) {
-            husky::LOG_I << "BFS Clustering finished iteration " << iteration << std::endl;
+            husky::LOG_I << "BFS Clustering finished iteration " << iteration << " finished with " << numNewAssigned << " items assigned " << std::endl;
         }
+
+        if (numNewAssigned == 0)
+            break;
+
         iteration++;
     }
 
     // get number of points that are not categorized
     int numUnAssigned = 
         sumAgg<AdjObject, int>(adj_list, [](AdjObject& adj){
-                if (adj._label == adj.id())
+                if (adj._state == 0)
                     return 1;
                 else 
                     return 0;
     });
 
-    // assigned unassinged vertices to the block with largest id
-    unsigned maxLabel = std::numeric_limits<unsigned>::min();
-    for (auto label : labels) {
+    if (numUnAssigned != 0) {
+        // assigned unassinged vertices to the block with largest id
+        unsigned maxLabel = std::numeric_limits<unsigned>::min();
+        for (auto label : labels) {
 
-        if (label > maxLabel) {
-            maxLabel = label;
+            if (label > maxLabel) {
+                maxLabel = label;
+            }
+
         }
 
-    }
+        husky::list_execute(
+            adj_list,
+            {},
+            {},
+            [&maxLabel](AdjObject& adj){
+            if (adj._state == 0) {
+                adj._label = maxLabel;
+                adj._state = 1;
+            }
+        });
 
-    husky::list_execute(
-        adj_list,
-        {},
-        {},
-        [&maxLabel](AdjObject& adj){
-        if (adj._label == adj.id())
-            adj._label = maxLabel;
-    });
-
-    if (numUnAssigned != 0) {
         if (husky::Context::get_global_tid() == 0) {
             husky::LOG_I << numUnAssigned << " unassigned records are assigned to block " << maxLabel << std::endl;
         }
     }
-
     
-    // report number of clusters 
-    reportClustering(adj_list);
-}
-
-void AdjObject::ccclustering(
-    husky::ObjList<AdjObject>& adj_list, 
-    int numHops = std::numeric_limits<int>::max()) {
-
-    // cal cc until there are approximate cc blocks 
-    
-    auto& msgCh =
-            husky::ChannelStore::create_push_combined_channel<int, husky::MinCombiner<int>>(adj_list, adj_list);
-    husky::list_execute(
-        adj_list,
-        {},
-        {&msgCh},
-        [&msgCh](AdjObject& adj){
-        adj.propagateLabel(msgCh);
-    });
-
-    for (int i = 0; i < numHops; ++i) {
-        husky::list_execute(
-            adj_list,
-            {&msgCh},
-            {&msgCh},
-            [&msgCh](AdjObject& adj){
-            if (msgCh.has_msgs(adj) 
-                && msgCh.get(adj) < adj._label) {
-                adj._label = msgCh.get(adj);
-                adj.propagateLabel(msgCh);
-            }
-        });
-    }
-
     // report number of clusters 
     reportClustering(adj_list);
 }
@@ -407,6 +375,7 @@ void AdjObject::randomClustering(
     husky::ObjList<AdjObject>& adj_list, 
     unordered_set<unsigned> labels) {
 
+    AdjObject::resetLabels(adj_list);
     vector<int> labelsVec;
     labelsVec.reserve(labels.size());
     for (auto e : labels) {
@@ -488,6 +457,7 @@ void AdjObject::resetLabels(
     husky::list_execute(
         adj_list,
         [](AdjObject& adj){
+            adj._state = 0;
             adj._label = adj.id();
         });
 }

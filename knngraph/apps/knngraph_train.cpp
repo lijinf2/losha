@@ -84,10 +84,6 @@ void knngraph_train() {
         // #cc = #blocks
         Block::train(adj_list, data_list);
 
-        // reset labels
-        AdjObject::resetLabels(adj_list);
-
-
         // 3. get recall
         float avgRecall = AdjObject::calSampleAvgRecall(adj_list);
         if (husky::Context::get_global_tid() == 0) {
