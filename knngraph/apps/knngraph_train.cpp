@@ -76,13 +76,17 @@ void knngraph_train() {
         // build reverse kNN
         // train
         // 1. clustering
-        AdjObject::randomClustering(adj_list, labels);
+        // AdjObject::randomClustering(adj_list, labels);
         
-        // AdjObject::bfsClustering(adj_list, labels);
+        AdjObject::bfsClustering(adj_list, labels);
 
         // 2. build block_list and train
         // #cc = #blocks
         Block::train(adj_list, data_list);
+
+        // reset labels
+        AdjObject::resetLabels(adj_list);
+
 
         // 3. get recall
         float avgRecall = AdjObject::calSampleAvgRecall(adj_list);

@@ -60,7 +60,7 @@ public:
     static void train(
         husky::ObjList<AdjObject>& adj_list,
         husky::ObjList<DataObject<ItemElementType>>& data_list);
-    
+
 private:
     static void reportBlockAndNumRequestItems(
         husky::ObjList<Block>& block_list) {
@@ -109,9 +109,9 @@ void Block::train(
     husky::ObjList<DataObject<ItemElementType>>& data_list) {
 
     // build block_list, block_id = label
-    auto & block_list =
+    thread_local auto & block_list =
         husky::ObjListStore::create_objlist<Block>();
-    auto& load_channel = 
+    thread_local auto& load_channel = 
         husky::ChannelStore::create_push_channel<
             AdjRecord>(adj_list, block_list);
     husky::list_execute(
@@ -130,7 +130,8 @@ void Block::train(
         {&load_channel},
         {},
         [&load_channel](Block& blk) {
-            blk._records = load_channel.get(blk);
+            const auto& msgs = load_channel.get(blk); 
+            blk._records = msgs;
         });
 
     // every thread should execute getNumTotalRequestItems
@@ -139,8 +140,9 @@ void Block::train(
         husky::LOG_I << "Total number of requests is " << numTotalRequests << std::endl;
     }
     // get item and local join
-    auto& request_channel = 
+    thread_local auto& request_channel = 
         husky::ChannelStore::create_push_channel<int>(block_list, data_list);
+    
     husky::list_execute(
         block_list,
         {},
@@ -153,7 +155,7 @@ void Block::train(
         });
 
     typedef DenseVector<int, ItemElementType> DV;
-    auto& response_channel = 
+    thread_local auto& response_channel = 
         husky::ChannelStore::create_push_channel<DV>(data_list, block_list);
 
     husky::list_execute(
@@ -171,8 +173,8 @@ void Block::train(
             }
         });
 
-    // //@ avoid three copies of the dataset, probably write disk and then read disk
-    auto& result_channel = 
+    //@ avoid three copies of the dataset, probably write disk and then read disk
+    thread_local auto& result_channel = 
         husky::ChannelStore::create_push_channel<pair<int, float>>(block_list, adj_list);
     husky::list_execute(
         block_list,
@@ -213,7 +215,8 @@ void Block::train(
         {},
         [&result_channel](AdjObject& adj){
         const vector<pair<int, float>>& msgs = result_channel.get(adj);
-        adj.mergeFoundKNN(msgs);
+        if (msgs.size() > 0)
+            adj.mergeFoundKNN(msgs);
     });
 }
 
