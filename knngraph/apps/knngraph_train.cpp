@@ -87,7 +87,7 @@ void knngraph_train() {
         // 3. get recall
         float avgRecall = AdjObject::calSampleAvgRecall(adj_list);
         if (husky::Context::get_global_tid() == 0) {
-            husky::LOG_I << "avg recall is " << avgRecall << std::endl;
+            husky::LOG_I << "finished iteration " << i <<  ", and avg recall is " << avgRecall << std::endl;
         }
     }
 }

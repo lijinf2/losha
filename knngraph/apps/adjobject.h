@@ -306,16 +306,33 @@ void AdjObject::bfsClustering(
             adj_list,
             {&msgCh},
             {&msgCh, &agg_ch},
-            [&msgCh, &not_finished](AdjObject& adj){
-            vector<int> msgs = msgCh.get(adj); 
+            [&msgCh, &not_finished, &labels](AdjObject& adj){
+            const vector<int>& msgs = msgCh.get(adj); 
             if (msgs.size() != 0 && adj._state == 0) {
                 adj._state = 1;
 
                 // assign to the k-th largest number
-                int k = adj.id() % msgs.size();
-                std::nth_element(msgs.begin(), msgs.begin() + k, msgs.end());
+                // int k = adj.id() % msgs.size();
+                // std::nth_element(msgs.begin(), msgs.begin() + k, msgs.end());
                 // std::sort(msgs.begin(), msgs.end());
-                adj._label = msgs[k];
+                // adj._label = msgs[k];
+                //
+                // assign to the most frequent labels
+                unordered_map<int, int> m;
+                m.reserve(labels.size());
+                pair<int, int> selected(-1, std::numeric_limits<int>::min());
+                for (auto label : msgs) {
+                    if (m.find(label) != m.end()) {
+                        m[label]++;        
+                    } else {
+                        m[label] = 1;
+                    }
+                    if (m[label] > selected.second) {
+                        selected.first = label;
+                        selected.second = m[label];
+                    }
+                }
+                adj._label = selected.first;
                 adj.propagateLabel(msgCh);
                 not_finished.update(1);
             }
