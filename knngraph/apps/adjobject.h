@@ -339,7 +339,7 @@ void AdjObject::bfsClustering(
         });
         int numNewAssigned = not_finished.get_value();
         if (husky::Context::get_global_tid() == 0) {
-            husky::LOG_I << "BFS Clustering finished iteration " << iteration << " finished with " << numNewAssigned << " items assigned " << std::endl;
+            husky::LOG_I << "BFS Clustering finished round " << iteration << " finished with " << numNewAssigned << " items assigned " << std::endl;
         }
 
         if (numNewAssigned == 0)

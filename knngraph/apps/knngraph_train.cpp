@@ -73,6 +73,13 @@ void knngraph_train() {
     // iteration
     unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
     for (int i = 0; i < maxIteration; ++i) {
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << "start iteration " << i << std::endl;
+        }
+
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << "iteration " << i << " starts clustering " << std::endl;
+        }
         // build reverse kNN
         // train
         // 1. clustering
@@ -80,6 +87,9 @@ void knngraph_train() {
         
         AdjObject::bfsClustering(adj_list, labels);
 
+        if (husky::Context::get_global_tid() == 0) {
+            husky::LOG_I << "iteration " << i << " starts knn graph training" << std::endl;
+        }
         // 2. build block_list and train
         // #cc = #blocks
         Block::train(adj_list, data_list);
@@ -87,7 +97,8 @@ void knngraph_train() {
         // 3. get recall
         float avgRecall = AdjObject::calSampleAvgRecall(adj_list);
         if (husky::Context::get_global_tid() == 0) {
-            husky::LOG_I << "finished iteration " << i <<  ", and avg recall is " << avgRecall << std::endl;
+            husky::LOG_I << "iteration " << i <<  " finished. The avg recall is " << avgRecall << std::endl;
+            husky::LOG_I << std::endl;
         }
     }
 }
