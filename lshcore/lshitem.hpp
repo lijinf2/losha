@@ -42,7 +42,7 @@ public:
     LSHItem() : DenseVector<ItemIdType, ItemElementType>() {}
 
     inline void sendToQuery(const ItemIdType& qId, const AnswerMsg& msg) {
-        item_msg_buffer.push_back(std::make_pair(qId, msg));
+        item_msg_buffer.emplace_back(std::make_pair(qId, msg));
     }
 
     virtual void answer(
