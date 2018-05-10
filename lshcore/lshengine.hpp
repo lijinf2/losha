@@ -314,7 +314,6 @@ void loshaengine(
             [&factory, &bucket2ItemCH](ItemType& item) {
 
             const vector<QueryMsg>& inMsg = bucket2ItemCH.get(item);
-            if (inMsg.size() == 0) return;
 
             item.answer(factory, inMsg);
 
@@ -331,6 +330,9 @@ void loshaengine(
             }
         }
         ItemType::topk_item_msg_buffer.clear();
+        item2QueryCH.out();
+        // ChannelManager out_manager(item2QueryCH);
+        // out_manager.flush();
 
         auto time_item_finished = std::chrono::steady_clock::now();
         std::chrono::duration<double, std::milli> d_answer = time_item_finished - time_bucket_finished;

@@ -39,6 +39,23 @@ void writeHDFSVector(
         text += " ";
         text += std::to_string(vec[i]);
     }
+    text += "\n";
+    writeHDFS(text, namenodeKey, portKey, outputPathKey);
+}
+
+template<typename IdType, typename FirstT, typename SecondT>
+void writeHDFSPairVector(
+    const IdType& queryId,
+    const vector<pair<FirstT, SecondT>>& vec,
+    const string& namenodeKey, const string& portKey, const string& outputPathKey) {
+    string text = std::to_string(queryId);
+    for (int i = 0; i < vec.size(); ++i) {
+        text += " ";
+        text += std::to_string(vec[i].first);
+        text += " ";
+        text += std::to_string(vec[i].second);
+    }
+    text += "\n";
     writeHDFS(text, namenodeKey, portKey, outputPathKey);
 }
 
