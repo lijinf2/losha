@@ -274,11 +274,10 @@ void loshaengine(
                 if (query.finished) return;
                 auto& inMsg = item2QueryCH.get(query);
                 query.query(factory, inMsg);
-
-                for (auto& bId : query.query_msg_buffer) {
+                for (auto& bId : QueryType::query_msg_buffer) {
                     query2BucketCH.push(query.queryMsg, bId);
                 }
-                query.query_msg_buffer.clear();
+                QueryType::query_msg_buffer.clear();
         });
 
         auto time_query_finished = std::chrono::steady_clock::now();
@@ -312,18 +311,26 @@ void loshaengine(
 
         // execute Items
         husky::list_execute(item_list,
-            [&factory, &bucket2ItemCH, &item2QueryCH](ItemType& item) {
+            [&factory, &bucket2ItemCH](ItemType& item) {
 
-                const vector<QueryMsg>& inMsg = bucket2ItemCH.get(item);
+            const vector<QueryMsg>& inMsg = bucket2ItemCH.get(item);
             if (inMsg.size() == 0) return;
 
             item.answer(factory, inMsg);
 
-            for (auto& pair : ItemType::item_msg_buffer) {
-                item2QueryCH.push(pair.second, pair.first);
-            }
-            ItemType::item_msg_buffer.clear();
         });
+
+        for (auto& pair : ItemType::item_msg_buffer) {
+            item2QueryCH.push(pair.second, pair.first);
+        }
+        ItemType::item_msg_buffer.clear();
+
+        for (auto& p : ItemType::topk_item_msg_buffer) {
+            for (auto& msg : p.second) {
+                item2QueryCH.push(msg, p.first);
+            }
+        }
+        ItemType::topk_item_msg_buffer.clear();
 
         auto time_item_finished = std::chrono::steady_clock::now();
         std::chrono::duration<double, std::milli> d_answer = time_item_finished - time_bucket_finished;

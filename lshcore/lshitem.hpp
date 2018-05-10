@@ -37,12 +37,32 @@ public:
 
     static thread_local std::vector< std::pair<ItemIdType, AnswerMsg> > item_msg_buffer;
 
+    static thread_local std::unordered_map<ItemIdType, std::vector<AnswerMsg>> topk_item_msg_buffer;
+
     // require by Husky object
     explicit LSHItem(const typename LSHItem::KeyT& id) : DenseVector<ItemIdType, ItemElementType>(id) {};
     LSHItem() : DenseVector<ItemIdType, ItemElementType>() {}
 
     inline void sendToQuery(const ItemIdType& qId, const AnswerMsg& msg) {
         item_msg_buffer.emplace_back(std::make_pair(qId, msg));
+    }
+
+    inline void sendToQueryTopk(
+        const ItemIdType& qId,
+        const AnswerMsg& msg,
+        int K,
+        std::function<bool(const AnswerMsg& msg1, const AnswerMsg& msg2)> comparator) {
+        if (topk_item_msg_buffer.find(qId) == topk_item_msg_buffer.end()) {
+            topk_item_msg_buffer[qId] = std::vector<AnswerMsg>();
+        } 
+
+        std::vector<AnswerMsg>& buffer = topk_item_msg_buffer[qId];
+        buffer.emplace_back(msg);
+        std::push_heap(buffer.begin(), buffer.end(), comparator);
+        if (buffer.size() > K) {
+            std::pop_heap(buffer.begin(), buffer.end(), comparator);
+            buffer.pop_back();
+        }
     }
 
     virtual void answer(
@@ -59,6 +79,15 @@ thread_local std::vector<std::pair<ItemIdType, AnswerMsg>> LSHItem<ItemIdType,
     ItemElementType,
     QueryMsg,
     AnswerMsg>::item_msg_buffer;
+
+template<typename ItemIdType,
+         typename ItemElementType,
+         typename QueryMsg,
+         typename AnswerMsg >
+thread_local std::unordered_map<ItemIdType, std::vector<AnswerMsg>> LSHItem<ItemIdType,
+    ItemElementType,
+    QueryMsg,
+    AnswerMsg>::topk_item_msg_buffer;
 
 } // namespace losha
 } // namespace husky
