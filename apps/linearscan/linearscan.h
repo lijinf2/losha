@@ -47,6 +47,11 @@ public:
         for (auto& p : queries) {
 
             const auto& queryId = p.first;
+
+            // exclude query with the item id
+            if (queryId == this->getItemId())
+                continue;
+
             const auto& queryVector = p.second;
             float distance = factory.calDist(queryVector, this->getItemVector());
 
