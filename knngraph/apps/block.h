@@ -218,6 +218,8 @@ void Block::train(
         if (msgs.size() > 0)
             adj.mergeFoundKNN(msgs);
     });
+
+    AdjObject::updateRKNN(adj_list);
 }
 
 }
