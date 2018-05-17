@@ -110,6 +110,11 @@ public:
         }
         return *(_Adj2AdjPushIntCH);
     };
+
+    static unordered_set<int> getKIdMaxIndegree(
+        husky::ObjList<AdjObject>& adj_list,
+        int numBlocks);
+
 private:
     static thread_local husky::PushChannel<int, AdjObject>* _Adj2AdjPushIntCH;
     float getCurRecall() {
@@ -477,6 +482,12 @@ void AdjObject::resetLabels(
             adj._state = 0;
             adj._label = adj.id();
         });
+}
+
+unordered_set<int> AdjObject::getKIdMaxIndegree(
+    husky::ObjList<AdjObject>& adj_list,
+    int numBlocks) {
+
 }
 
 thread_local husky::PushChannel<int, AdjObject>* AdjObject::_Adj2AdjPushIntCH = NULL;
