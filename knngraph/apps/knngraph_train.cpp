@@ -85,7 +85,7 @@ void knngraph_train() {
         // 1. clustering
         // AdjObject::randomClustering(adj_list, labels);
         
-        unordered_set<int> labels = AdjObject::getKIdMaxIndegree(adj_list, numBlocks);
+        unordered_set<unsigned> labels = AdjObject::getKIdMaxIndegree(adj_list, numBlocks);
         AdjObject::bfsClustering(adj_list, labels);
 
         if (husky::Context::get_global_tid() == 0) {
