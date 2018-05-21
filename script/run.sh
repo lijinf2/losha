@@ -1,2 +1,17 @@
-./exec.sh ../build/e2lsh --conf ../conf/e2lsh.conf
-#./exec.sh gqr --conf ../conf/gqr.conf
+hadoop dfs -rm -r /losha/output
+app="linearscan"
+# mode="Debug"
+mode="Release"
+
+mkdir ../${mode}
+cd ../${mode}
+cmake ../ -DCMAKE_BUILD_TYPE=${mode}
+make -j4 ${app} 2>&1 | tee ../script/log.txt
+cd ../script
+
+log=`grep error log.txt`
+if [ "$log" != "" ]; then
+    exit
+fi
+../${mode}/${app} --conf ../conf/${app}.conf
+# ./exec.sh ../${mode}/${app} --conf ../conf/${app}-slaves.conf

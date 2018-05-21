@@ -1,6 +1,6 @@
-cd ../..//build
-cmake ../ -DCMAKE_BUILD_TYPE=Debug
-# cmake ../ -DCMAKE_BUILD_TYPE=Release
+cd ../../build
+# cmake ../ -DCMAKE_BUILD_TYPE=Debug
+cmake ../ -DCMAKE_BUILD_TYPE=Release
 make knngraph_train -j4 2>&1 | tee ../knngraph/script/log.txt
 cd ../knngraph/script
 
@@ -9,4 +9,4 @@ if [ "$log" != "" ]; then
     exit
 fi
 
-gdb --args ../../build/knngraph_train --conf ../../conf/knngraph_train.conf
+../../build/knngraph_train --conf ../../conf/knngraph_train.conf

@@ -124,6 +124,13 @@ public:
 
             auto item_pair = std::make_pair(this->getItemId(), distance);
             this->sendToQuery(queryId, item_pair);
+            // this->sendToQueryTopk(
+            //     queryId, 
+            //     item_pair, 
+            //     std::stoi(husky::Context::get_param("TopK")),
+            //     [](const AnswerMsg& a, const AnswerMsg& b){
+            //     return a.second < b.second;
+            // });
         }
     }
 };

@@ -7,7 +7,6 @@ set(EXTERNAL_LIB ${CMAKE_THREAD_LIBS_INIT})
 
 SET(TOOLS
     evaluate_triplets
-    cal_groundtruth_idlibsvm
     cal_groundtruth_idfvecs
 )
 

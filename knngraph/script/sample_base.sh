@@ -11,9 +11,10 @@ fi
 
 
 dataset="audio"
-num_samples=20
+num_samples=1
 base_file="../../data/idfvecs/${dataset}/${dataset}_base.idfvecs"
 sample_file="../data/${dataset}/${dataset}_sample.idfvecs"
 
+mkdir ../data/${dataset}
 ../../build/sample_base $base_file $num_samples $sample_file
 

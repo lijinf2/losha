@@ -71,7 +71,7 @@ void knngraph_train() {
     // auto tmp = AdjObject::getRKNNSizeMaxMin(adj_list);
 
     // iteration
-    // unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
+    unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
     for (int i = 0; i < maxIteration; ++i) {
         if (husky::Context::get_global_tid() == 0) {
             husky::LOG_I << "start iteration " << i << std::endl;

@@ -6,6 +6,7 @@
 #include "core/engine.hpp"
 #include "io/input/inputformat_store.hpp"
 
+#include "losha/common/writer.hpp"
 #include "knnconnected_components.h"
 using std::vector;
 using std::string;
@@ -39,23 +40,17 @@ void knnconnected_components() {
     auto parser = [&channel](boost::string_ref& line) {
         boost::char_separator<char> sep(" \t");
         boost::tokenizer<boost::char_separator<char>> tok(line, sep);
-        int size = 0;
-        for (auto& w : tok) {
-            size++;
-        }
-        if (size <= 2) return;
 
         int queryId;
         int itemId;
         float distance;
-        vector<int> knn;
 
         auto it = tok.begin();
         queryId = std::stoi(*it++);
 
         while(it != tok.end()) {
             itemId = std::stoi(*it++);
-            distance = std::stoi(*it++);
+            distance = std::stof(*it++);
             channel.push(itemId, queryId);
             channel.push(queryId, itemId);
         }
@@ -72,7 +67,11 @@ void knnconnected_components() {
             // assert(msgs.size() == 1);
             // vertex._nbs = msgs[0];
 
-        
+            string line = std::to_string(vertex.id());
+            line += " ";
+            line += std::to_string(vertex._nbs.size());
+            line += "\n";
+            writeHDFS(line, "hdfs_namenode", "hdfs_namenode_port", "output_path");
         });
 
     int numNodes = count(vertex_list);

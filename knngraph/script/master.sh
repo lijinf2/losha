@@ -1,5 +1,6 @@
-# mode="Debug"
 mode="Release"
+# mode="Debug"
+app="knnconnected_components"
 
 cd ../../${mode}
 cmake ../ -DCMAKE_BUILD_TYPE=${mode}
@@ -12,5 +13,6 @@ if [ "$log" != "" ]; then
 fi
 
 
-../../${mode}/husky/Master --conf ../../conf/knngraph_train.conf 
+../../${mode}/husky/Master --conf ../../conf/${app}.conf 
+# ../../${mode}/husky/Master --conf ../../conf/${app}-slaves.conf 
 
