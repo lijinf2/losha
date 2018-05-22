@@ -487,49 +487,15 @@ void AdjObject::resetLabels(
 unordered_set<unsigned> AdjObject::getKIdMaxIndegree(
     husky::ObjList<AdjObject>& adj_list,
     int numBlocks) {
-    typedef vector<pair<unsigned, int>> TopKPairs;
+	vector<pair<unsigned, int>> result =
+        keyValueAggTopK<AdjObject, unsigned, int>(
+        adj_list, 
+        [] (const AdjObject& obj) {
+            auto p = std::make_pair(obj.id(), obj._rKNN.size());
+            return p;},
+        numBlocks
+        );
 
-    auto comparator = [](const pair<unsigned, int>& p1, const pair<unsigned, int>& p2){
-        return p1.second > p2.second;
-    };
-
-    auto add_to_topk = [numBlocks, &comparator](TopKPairs& pairs, const pair<unsigned, int>& p) {
-        pairs.emplace_back(p);
-        std::push_heap(
-            pairs.begin(),
-            pairs.end(),
-            comparator);
-        if (pairs.size() > numBlocks) {
-            std::pop_heap(pairs.begin(), pairs.end(), comparator);
-            pairs.pop_back();
-        }
-    };
-
-    husky::lib::Aggregator<TopKPairs> topk_agg(
-        vector<pair<unsigned, int>>(),
-        [&add_to_topk](TopKPairs& a, const TopKPairs& b) {
-            for (auto& i : b)
-                add_to_topk(a, i);
-        },
-        [](TopKPairs& a) { a.clear(); }
-    );
-
-    husky::list_execute(
-        adj_list,
-        [&topk_agg, add_to_topk](AdjObject& obj){
-            topk_agg.update(add_to_topk, std::make_pair(obj._vid, obj._rKNN.size()));
-        }
-    );
-
-    husky::lib::AggregatorFactory::sync();
-    TopKPairs result = topk_agg.get_value();
-    /*
-    if (husky::Context::get_global_tid() == 0) {
-        for(auto& e : result) {
-            husky::LOG_I << e.first << "," << e.second << std::endl;
-        }
-    }
-    */
     unordered_set<unsigned> topk_set;
     for(auto& ele : result) {
         topk_set.insert(ele.first);
