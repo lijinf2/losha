@@ -111,7 +111,7 @@ public:
         return *(_Adj2AdjPushIntCH);
     };
 
-    static unordered_set<int> getKIdMaxIndegree(
+    static unordered_set<unsigned> getKIdMaxIndegree(
         husky::ObjList<AdjObject>& adj_list,
         int numBlocks);
 
@@ -484,10 +484,23 @@ void AdjObject::resetLabels(
         });
 }
 
-unordered_set<int> AdjObject::getKIdMaxIndegree(
+unordered_set<unsigned> AdjObject::getKIdMaxIndegree(
     husky::ObjList<AdjObject>& adj_list,
     int numBlocks) {
+	vector<pair<unsigned, int>> result =
+        keyValueAggTopK<AdjObject, unsigned, int>(
+        adj_list, 
+        [] (const AdjObject& obj) {
+            auto p = std::make_pair(obj.id(), obj._rKNN.size());
+            return p;},
+        numBlocks
+        );
 
+    unordered_set<unsigned> topk_set;
+    for(auto& ele : result) {
+        topk_set.insert(ele.first);
+    }
+    return topk_set;
 }
 
 thread_local husky::PushChannel<int, AdjObject>* AdjObject::_Adj2AdjPushIntCH = NULL;

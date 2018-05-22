@@ -132,6 +132,48 @@ pair<KeyType, ValueType> keyValueAggMin(
     return minAgg.get_value();
 }
 
+template<typename ObjT, typename KeyType, typename ValueType>
+vector<pair<KeyType, ValueType>> keyValueAggTopK(
+    husky::ObjList<ObjT>& obj_list,
+    std::function<pair<KeyType, ValueType>(const ObjT&)> getKeyValue,
+    int K) {
+    auto comparator = [](const pair<KeyType, ValueType>& p1, const pair<KeyType, ValueType>& p2){
+        return p1.second > p2.second;
+    };
+
+    auto add_to_topk = [K, &comparator](vector<pair<KeyType, ValueType>>& pairs, const pair<KeyType, ValueType>& p) {
+        pairs.emplace_back(p);
+        std::push_heap(
+            pairs.begin(),
+            pairs.end(),
+            comparator);
+        if (pairs.size() > K) {
+            std::pop_heap(pairs.begin(), pairs.end(), comparator);
+            pairs.pop_back();
+        }
+    };
+
+    husky::lib::Aggregator<vector<pair<KeyType, ValueType>>> topkAgg(
+        vector<pair<KeyType, ValueType>>(),
+        [&add_to_topk](vector<pair<KeyType, ValueType>>& a, const vector<pair<KeyType, ValueType>>& b) {
+            for (auto& i : b)
+                add_to_topk(a, i);
+        },
+        [](vector<pair<KeyType, ValueType>>& a) { a.clear(); }
+    );
+
+    husky::list_execute(
+        obj_list,
+        [&topkAgg, &add_to_topk, &getKeyValue](ObjT& obj){
+            auto p = getKeyValue(obj);
+            topkAgg.update(add_to_topk, p);
+        }
+    );
+
+    husky::lib::AggregatorFactory::sync();
+    return topkAgg.get_value();
+}
+
 template<typename ObjT, typename ValueType>
 ValueType sumAgg (
     husky::ObjList<ObjT>& obj_list,
