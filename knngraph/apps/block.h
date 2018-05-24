@@ -2,11 +2,13 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+#include <functional>
 
 #include "base/log.hpp"
 #include "core/engine.hpp"
 
-#include "losha/common/distor.hpp"
+// #include "losha/common/distor.hpp"
+#include "losha/common/timer.hpp"
 #include "adjobject.h"
 #include "dataobject.h"
 using std::vector;
@@ -59,7 +61,8 @@ public:
     template<typename ItemElementType>
     static void train(
         husky::ObjList<AdjObject>& adj_list,
-        husky::ObjList<DataObject<ItemElementType>>& data_list);
+        husky::ObjList<DataObject<ItemElementType>>& data_list,
+        std::function<float (const vector<ItemElementType>& a, const vector<ItemElementType>& b)> distor);
 
 private:
     static void reportBlockAndNumRequestItems(
@@ -106,8 +109,10 @@ private:
 template<typename ItemElementType>
 void Block::train(
     husky::ObjList<AdjObject>& adj_list,
-    husky::ObjList<DataObject<ItemElementType>>& data_list) {
+    husky::ObjList<DataObject<ItemElementType>>& data_list,
+    std::function<float (const vector<ItemElementType>& a, const vector<ItemElementType>& b)> distor) {
 
+    AccTimer timer;
     // build block_list, block_id = label
     thread_local auto & block_list =
         husky::ObjListStore::create_objlist<Block>();
@@ -158,6 +163,10 @@ void Block::train(
     thread_local auto& response_channel = 
         husky::ChannelStore::create_push_channel<DV>(data_list, block_list);
 
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished request in " << timer.getDelta() << " seconds" << std::endl;
+    }
+
     husky::list_execute(
         data_list,
         {&request_channel},
@@ -173,6 +182,10 @@ void Block::train(
             }
         });
 
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished response in " << timer.getDelta() << " seconds" << std::endl;
+    }
+
     //@ avoid three copies of the dataset, probably write disk and then read disk
     thread_local auto& result_channel = 
         husky::ChannelStore::create_push_channel<pair<int, float>>(block_list, adj_list);
@@ -180,7 +193,7 @@ void Block::train(
         block_list,
         {&response_channel},
         {&result_channel},
-        [&response_channel, &result_channel](Block& blk){
+        [&response_channel, &result_channel, &distor](Block& blk){
             // build mapping
             const auto& msgs = response_channel.get(blk);
             unordered_map<int, const vector<ItemElementType>*> idToVector;
@@ -196,7 +209,7 @@ void Block::train(
                     for (int j = i + 1; j < record._nbs.size(); ++j) {
                         int rightId = record._nbs[j];
 
-                        float dist = calE2Dist(*(idToVector[leftId]), *(idToVector[rightId]));
+                        float dist = distor(*(idToVector[leftId]), *(idToVector[rightId]));
 
                         sentMsg = std::make_pair(rightId, dist);
                         result_channel.push(sentMsg, leftId);
@@ -208,6 +221,9 @@ void Block::train(
             }
         });
 
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished local join in " << timer.getDelta() << " seconds" << std::endl;
+    }
     // update adj_list by result_channel
     husky::list_execute(
         adj_list,
@@ -219,7 +235,14 @@ void Block::train(
             adj.mergeFoundKNN(msgs);
     });
 
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished merge new candidates in " << timer.getDelta() << " seconds" << std::endl;
+    }
+
     AdjObject::updateRKNN(adj_list);
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished updateRKNN in " << timer.getDelta() << " seconds" << std::endl;
+    }
 }
 
 }

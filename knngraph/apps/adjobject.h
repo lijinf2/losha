@@ -24,6 +24,8 @@ public:
     KeyT _vid;
     // only sampled objects in lshbox file will have _trueKNN, other points have no _true_KNN;
     vector<pair<int, float>> _trueKNN;
+
+    // should maintain a heap structure
     vector<pair<int, float>> _foundKNN;
 
     vector<int> _rKNN;
@@ -312,17 +314,19 @@ void AdjObject::bfsClustering(
             {&msgCh},
             {&msgCh, &agg_ch},
             [&msgCh, &not_finished, &labels](AdjObject& adj){
-            const vector<int>& msgs = msgCh.get(adj); 
-            if (msgs.size() != 0 && adj._state == 0) {
+            if (msgCh.get(adj).size() != 0 && adj._state == 0) {
                 adj._state = 1;
 
-                // assign to the k-th largest number
+                // // // assign to the k-th largest number
+                // vector<int> msgs = msgCh.get(adj); 
                 // int k = adj.id() % msgs.size();
                 // std::nth_element(msgs.begin(), msgs.begin() + k, msgs.end());
                 // std::sort(msgs.begin(), msgs.end());
                 // adj._label = msgs[k];
+
                 //
                 // assign to the most frequent labels
+                const vector<int>& msgs = msgCh.get(adj); 
                 unordered_map<int, int> m;
                 m.reserve(labels.size());
                 pair<int, int> selected(-1, std::numeric_limits<int>::min());
@@ -338,6 +342,7 @@ void AdjObject::bfsClustering(
                     }
                 }
                 adj._label = selected.first;
+
                 adj.propagateLabel(msgCh);
                 not_finished.update(1);
             }

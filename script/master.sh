@@ -1,6 +1,6 @@
 # mode="Debug"
 mode="Debug"
-app="linearscan"
+app="knngraph_train"
 
 cd ../${mode}
 cmake ../ -DCMAKE_BUILD_TYPE=${mode}
@@ -13,6 +13,6 @@ if [ "$log" != "" ]; then
 fi
 
 
-# ../${mode}/husky/Master --conf ../conf/${app}.conf 
-../${mode}/husky/Master --conf ../conf/${app}-slaves.conf 
+../${mode}/husky/Master --conf ../conf/${app}.conf 
+# ../${mode}/husky/Master --conf ../conf/${app}-slaves.conf 
 

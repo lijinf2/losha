@@ -1,8 +1,8 @@
-# hadoop dfs -rm -r /losha/output
+hadoop dfs -rm -r /losha/output
 app="knngraph_train"
 # mode="Debug"
-# mode="Release"
-mode="RelWithDebInfo"
+mode="Release"
+# mode="RelWithDebInfo"
 
 mkdir ../${mode}
 cd ../${mode}
@@ -14,7 +14,5 @@ log=`grep error log.txt`
 if [ "$log" != "" ]; then
     exit
 fi
-ls ../conf/${app}.conf > /dev/null
-
-../${mode}/${app} --conf ../conf/${app}.conf
-# ./exec.sh ../${mode}/${app} --conf ../conf/${app}-slaves.conf
+# ../${mode}/${app} --conf ../conf/${app}.conf
+./exec.sh ../${mode}/${app} --conf ../conf/${app}-slaves.conf

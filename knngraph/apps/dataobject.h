@@ -1,9 +1,16 @@
 #pragma once
-#include "lshcore/densevector.hpp"
-#include "core/engine.hpp"
 #include <utility>
 #include <vector>
 #include <limits>
+
+#include "core/engine.hpp"
+#include "io/input/inputformat_store.hpp"
+
+#include "lshcore/densevector.hpp"
+#include "lshcore/loader/loader.h"
+
+// #include "dataadjhandler.h"
+
 using std::pair;
 using std::vector;
 namespace husky {
