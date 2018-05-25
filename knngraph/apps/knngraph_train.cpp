@@ -25,7 +25,7 @@ void knngraph_train_runner() {
         maxIteration,
         numBlocks,
         numNBPerNode,
-        calE2Dist);
+        calSquareE2Dist);
 }
 
 int main(int argc, char ** argv) {

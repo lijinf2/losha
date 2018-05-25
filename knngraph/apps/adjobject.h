@@ -43,18 +43,40 @@ public:
     void mergeFoundKNN(const vector<pair<int, float>>& msgs) {
         unordered_set<int> visited;
         visited.reserve(msgs.size() + _foundKNN.size());
-        TopK topk(_foundKNN.size());
-        for (auto p : _foundKNN) {
+
+        for (const auto& p : _foundKNN) {
+            visited.insert(p.first);
+        }
+
+        auto comparator = 
+            [](const pair<int, float>& a, const pair<int, float>& b){
+                return a.second < b.second;
+        };
+
+        for (const auto& p : msgs) {
             if (visited.find(p.first) != visited.end()) continue;
             visited.insert(p.first);
-            topk.insert(p);
+
+            if (p.second < _foundKNN.front().second) {
+                std::pop_heap(_foundKNN.begin(), _foundKNN.end(), comparator);
+                _foundKNN.pop_back();
+                _foundKNN.emplace_back(p);
+                std::push_heap(_foundKNN.begin(), _foundKNN.end(), comparator);
+            }
         }
-        for (auto p : msgs) {
-            if (visited.find(p.first) != visited.end()) continue;
-            visited.insert(p.first);
-            topk.insert(p);
-        }
-        _foundKNN = topk.getTopKPairs();
+
+        // TopK topk(_foundKNN.size());
+        // for (const auto& p : _foundKNN) {
+        //     if (visited.find(p.first) != visited.end()) continue;
+        //     visited.insert(p.first);
+        //     topk.insert(p);
+        // }
+        // for (const auto& p : msgs) {
+        //     if (visited.find(p.first) != visited.end()) continue;
+        //     visited.insert(p.first);
+        //     topk.insert(p);
+        // }
+        // _foundKNN = topk.getTopKPairs();
     }
 
     vector<int> getNB() {

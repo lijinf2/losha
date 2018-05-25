@@ -201,7 +201,6 @@ void Block::train(
                 idToVector[data.getItemId()] = &(data.getItemVector());
             }
             // all pair training inside each record
-            pair<int, float> sentMsg;
             for (const AdjRecord& record : blk._records) {
                 for (int i = 0; i < record._nbs.size(); ++i) {
                     int leftId = record._nbs[i];
@@ -211,11 +210,11 @@ void Block::train(
 
                         float dist = distor(*(idToVector[leftId]), *(idToVector[rightId]));
 
-                        sentMsg = std::make_pair(rightId, dist);
-                        result_channel.push(sentMsg, leftId);
+                        pair<int, float> msgToLeft(rightId, dist);
+                        result_channel.push(msgToLeft, leftId);
 
-                        sentMsg = std::make_pair(leftId, dist);
-                        result_channel.push(sentMsg, rightId);
+                        pair<int, float> msgToRight(leftId, dist);
+                        result_channel.push(msgToRight, rightId);
                     }
                 }
             }

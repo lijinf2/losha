@@ -8,19 +8,23 @@ using namespace std;
 namespace husky {
 namespace losha {
 
-float calE2Dist(
+inline float calSquareE2Dist(
         const std::vector<float> & queryVector,
         const std::vector<float> & itemVector) {
 
-    typename std::vector<float>::const_iterator qIt = queryVector.begin();
-    typename std::vector<float>::const_iterator myIt = itemVector.begin();
-
+    assert(queryVector.size() == itemVector.size());
     float distance = 0;
-    while (myIt != itemVector.end() && qIt != queryVector.end()) {
-        distance += (*myIt - *qIt) * (*myIt - *qIt);
-        ++myIt; ++qIt;
+    for (int i = 0; i < queryVector.size(); ++i) {
+        distance += (queryVector[i] - itemVector[i]) * (queryVector[i] - itemVector[i]);
     }
-    return sqrt(distance);
+    return distance;
+}
+
+inline float calE2Dist(
+        const std::vector<float> & queryVector,
+        const std::vector<float> & itemVector) {
+
+    return sqrt(calSquareE2Dist(queryVector, itemVector));
 }
 
 float calAngularDist(
