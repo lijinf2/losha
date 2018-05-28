@@ -13,13 +13,14 @@
 #include "lshcore/densevector.hpp"
 #include "lshcore/loader/loader.h"
 #include "losha/common/writer.hpp"
+#include "losha/common/aggre.hpp"
 #include "gqr/util/random.h"
 
 #include "dataobject.h"
 #include "adjobject.h"
 #include "dataadjhandler.h"
-#include "knnagg.h"
 #include "block.h"
+#include "dataagg.h"
 // #include "knngraph_train.h"
 // #include "knnloader.h"
 using namespace husky::losha;
@@ -46,12 +47,12 @@ void knngraph_train(
         husky::ObjListStore::create_objlist<DataObject<FeatureType>>();
 
     DataObject<FeatureType>::loadIdFvecs(data_list, itemPath, dimension);
+    int numData = count(data_list);
 
     // initi adj_list, assume the id ranges from 0 - n - 1, load groundtruth
     auto & adj_list =
         husky::ObjListStore::create_objlist<AdjObject>();
 
-    int numData = count(data_list);
     int maxItemId = numData - 1;
     DataAdjHandler::buildAdjFromData(data_list, adj_list, sampleGroundtruthPath, maxItemId, numNBPerNode);
 
@@ -74,6 +75,8 @@ void knngraph_train(
     // auto tmp = AdjObject::getRKNNSizeMaxMin(adj_list);
 
     // iteration
+
+    DataAgg<FeatureType> dataset(data_list, numData);
     for (int i = 0; i < maxIteration; ++i) {
         if (husky::Context::get_global_tid() == 0) {
             husky::LOG_I << "start iteration " << i << std::endl;
@@ -85,19 +88,21 @@ void knngraph_train(
         // build reverse kNN
         // train
         // 1. clustering
-        unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
-        AdjObject::randomClustering(adj_list, labels);
-        
         // unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
+        // AdjObject::randomClustering(adj_list, labels);
+        
+        unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
         // unordered_set<unsigned> labels = AdjObject::getKIdMaxIndegree(adj_list, numBlocks);
-        // AdjObject::bfsClustering(adj_list, labels);
+        AdjObject::bfsClustering(adj_list, labels);
 
         if (husky::Context::get_global_tid() == 0) {
             husky::LOG_I << "iteration " << i << " starts knn graph training" << std::endl;
         }
         // 2. build block_list and train
         // #cc = #blocks
-        Block::train(adj_list, data_list, distor);
+        // Block::train(adj_list, data_list, distor);
+        //
+        Block::trainFitMem(adj_list, dataset, distor);
 
         // 3. get recall
         float avgRecall = AdjObject::calSampleAvgRecall(adj_list);
