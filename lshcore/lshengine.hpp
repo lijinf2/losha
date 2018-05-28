@@ -30,6 +30,8 @@
 #include "lshquery.hpp"
 #include "lshstat.hpp"
 #include "lshcore/loader/loader.h"
+#include "losha/common/aggre.hpp"
+
 
 using std::vector;
 using std::string;
@@ -165,47 +167,29 @@ void broadcastQueries(
         husky::LOG_I << "in broadcastQueries" << std::endl;
     }
     typedef std::pair<ItemIdType, std::vector<ItemElementType>> IdVectorPair;
-    typedef std::vector<IdVectorPair> QueryColType;
 
-    auto update_to_col = [](QueryColType& collector, const IdVectorPair& e) {
-        // husky::LOG_I << "broadcast out " << e.first << std::endl;
-        collector.push_back(e);
-    };
-
-    husky::lib::Aggregator< QueryColType > query_vector_agg(
-        QueryColType(), // parameter for initialization 
-        [update_to_col](QueryColType& a, const QueryColType& b) { // parameter for aggregation rule
-            for (const auto& e : b ) {
-                update_to_col(a, e);
-            }
-        },
-        [](QueryColType& col) {col.clear();}, // parameter for reset aggregator
-        [update_to_col](husky::base::BinStream& in, QueryColType& col) { // parameter for deserialization
-            col.clear();
-            for (size_t n = husky::base::deser<size_t>(in); n--;) {
-                update_to_col(col, husky::base::deser<IdVectorPair>(in));
-            }
-        }, 
-        [](husky::base::BinStream& out, const QueryColType& col){ // parameter for serialization
-            out << col.size();
-            for (auto& vec : col) {
-                out << vec;
-            }
-        });
+    int numProcesses = husky::Context::get_num_processes();
+    int numAggs = numProcesses* 2;
+    auto aggs = vectorAggs<IdVectorPair>(numAggs);
 
     husky::list_execute(query_list,
-        [&query_vector_agg, &update_to_col](QueryType& query) {
-        query_vector_agg.update(
-            update_to_col,
+        [&aggs, &numAggs](QueryType& query) {
+
+        aggs[query.getItemId() % numAggs].update(
+            [](vector<IdVectorPair>& collector, const IdVectorPair& e){
+                collector.push_back(e);
+            },
             std::make_pair(query.getItemId(), query.getItemVector()));
     });
 
     husky::lib::AggregatorFactory::sync();
     // should flush 
     // insert broadcast query to factory, call once
-    std::call_once(broadcast_flag, [&query_handler, &query_vector_agg](){
-        for (auto p : query_vector_agg.get_value()) {
-            query_handler(p.first, p.second);
+    std::call_once(broadcast_flag, [&query_handler, &aggs](){
+        for (auto& agg : aggs) {
+            for (auto& p  : agg.get_value()) {
+                query_handler(p.first, p.second);
+            }
         }
     });
     if (husky::Context::get_global_tid() == 0) {
