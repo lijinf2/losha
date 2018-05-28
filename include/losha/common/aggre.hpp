@@ -191,6 +191,29 @@ ValueType sumAgg (
     return sumAgg.get_value();
 } 
 
+template<typename ValueType>
+vector<husky::lib::Aggregator<vector<ValueType>>> vectorAggs( int numAggs = 1) { 
+
+    assert(numAggs > 0);
+    typedef vector<ValueType> AggType;
+    vector<husky::lib::Aggregator<AggType>> aggs;
+    aggs.reserve(numAggs);
+    for (int i = 0; i < numAggs; ++i) {
+        aggs.emplace_back(
+            husky::lib::Aggregator<AggType>(
+                AggType(),
+                [](AggType& a, const AggType& b){
+                    for (const auto& e : b) {
+                        a.emplace_back(e);
+                    }
+                },
+                [](AggType& col){
+                    col.clear();
+                })
+        );
+    }
+    return aggs; 
+}
 
 }
 }

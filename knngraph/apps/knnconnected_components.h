@@ -5,7 +5,7 @@
 #include "core/engine.hpp"
 #include "lib/aggregator_factory.hpp"
 
-#include "knnagg.h"
+#include "losha/common/aggre.hpp"
 using std::vector;
 using std::pair;
 

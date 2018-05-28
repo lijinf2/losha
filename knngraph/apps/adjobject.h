@@ -7,9 +7,9 @@
 #include <limits>
 
 #include "gqr/util/cal_groundtruth.h"
+#include "losha/common/aggre.hpp"
 
 #include "dataobject.h"
-#include "knnagg.h"
 using lshbox::TopK;
 using std::vector;
 using std::pair;

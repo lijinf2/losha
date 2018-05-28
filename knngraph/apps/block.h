@@ -11,6 +11,7 @@
 #include "losha/common/timer.hpp"
 #include "adjobject.h"
 #include "dataobject.h"
+#include "dataagg.h"
 using std::vector;
 using std::unordered_set;
 using std::unordered_map;
@@ -62,6 +63,12 @@ public:
     static void train(
         husky::ObjList<AdjObject>& adj_list,
         husky::ObjList<DataObject<ItemElementType>>& data_list,
+        std::function<float (const vector<ItemElementType>& a, const vector<ItemElementType>& b)> distor);
+
+    template<typename ItemElementType>
+    static void trainFitMem(
+        husky::ObjList<AdjObject>& adj_list,
+        DataAgg<ItemElementType>& dataset,
         std::function<float (const vector<ItemElementType>& a, const vector<ItemElementType>& b)> distor);
 
 private:
@@ -244,5 +251,91 @@ void Block::train(
     }
 }
 
+template<typename ItemElementType>
+void Block::trainFitMem(
+    husky::ObjList<AdjObject>& adj_list,
+    DataAgg<ItemElementType>& dataset,
+    std::function<float (const vector<ItemElementType>& a, const vector<ItemElementType>& b)> distor) {
+
+    AccTimer timer;
+    // build block_list, block_id = label
+    thread_local auto & block_list =
+        husky::ObjListStore::create_objlist<Block>();
+    thread_local auto& load_channel = 
+        husky::ChannelStore::create_push_channel<
+            AdjRecord>(adj_list, block_list);
+    husky::list_execute(
+        adj_list,
+        {},
+        {&load_channel},
+        [&load_channel](AdjObject& adj){
+            AdjRecord record(adj.id(), adj.getNB());
+            load_channel.push(
+                record,
+                adj._label);
+        });
+
+    husky::list_execute(
+        block_list,
+        {&load_channel},
+        {},
+        [&load_channel](Block& blk) {
+            const auto& msgs = load_channel.get(blk); 
+            blk._records = msgs;
+        });
+
+    //@ avoid three copies of the dataset, probably write disk and then read disk
+    thread_local auto& result_channel = 
+        husky::ChannelStore::create_push_channel<pair<int, float>>(block_list, adj_list);
+    husky::list_execute(
+        block_list,
+        {},
+        {&result_channel},
+        [&result_channel, &distor, &dataset](Block& blk){
+            // all pair training inside each record
+            for (const AdjRecord& record : blk._records) {
+                for (int i = 0; i < record._nbs.size(); ++i) {
+                    int leftId = record._nbs[i];
+
+                    for (int j = i + 1; j < record._nbs.size(); ++j) {
+                        int rightId = record._nbs[j];
+
+                        const vector<ItemElementType>& leftVector = dataset.getDataVector(leftId); 
+                        const vector<ItemElementType>& rightVector = dataset.getDataVector(rightId); 
+                        float dist = distor(leftVector, rightVector);
+
+                        pair<int, float> msgToLeft(rightId, dist);
+                        result_channel.push(msgToLeft, leftId);
+
+                        pair<int, float> msgToRight(leftId, dist);
+                        result_channel.push(msgToRight, rightId);
+                    }
+                }
+            }
+        });
+
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished local join in " << timer.getDelta() << " seconds" << std::endl;
+    }
+    // update adj_list by result_channel
+    husky::list_execute(
+        adj_list,
+        {&result_channel},
+        {},
+        [&result_channel](AdjObject& adj){
+        const vector<pair<int, float>>& msgs = result_channel.get(adj);
+        if (msgs.size() > 0)
+            adj.mergeFoundKNN(msgs);
+    });
+
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished merge new candidates in " << timer.getDelta() << " seconds" << std::endl;
+    }
+
+    AdjObject::updateRKNN(adj_list);
+    if (husky::Context::get_global_tid() == 0) {
+        husky::LOG_I << "finished updateRKNN in " << timer.getDelta() << " seconds" << std::endl;
+    }
+}
 }
 }
