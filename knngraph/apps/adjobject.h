@@ -417,7 +417,7 @@ void AdjObject::bfsClustering(
     }
     
     // report number of clusters 
-    reportClustering(adj_list);
+    // reportClustering(adj_list);
 }
 
 void AdjObject::randomClustering(
@@ -443,7 +443,7 @@ void AdjObject::randomClustering(
             adj._label = labelsVec[adj.id() % labelsVec.size()];
     });
 
-    reportClustering(adj_list);
+    // reportClustering(adj_list);
 
 }
 

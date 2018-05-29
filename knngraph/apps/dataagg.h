@@ -32,6 +32,7 @@ public:
             } 
             auto agg = this->genVecAgg(actualItems);
             _aggs.push_back(agg);
+            _numVectorEachAgg.push_back(actualItems);
             acc += actualItems;
         }
 
@@ -39,18 +40,16 @@ public:
             data_list, 
             {},
             {},
-            [this, &numExpectedItems](DataObject<FeatureType>& data){
+            [this, numExpectedItems](DataObject<FeatureType>& data){
 
                 auto& collector = this->_aggs[data.id() / numExpectedItems];
 
                 collector.update(
                     [&data, &numExpectedItems](vector<RecordT>& collection, const RecordT& record){
-                        if (collection.capacity() < numExpectedItems)
-                            collection.reserve(numExpectedItems);
+                        assert(data.id() % numExpectedItems < collection.size());
                         collection[data.id() % numExpectedItems] = record;
                     },
                     data.getItemVector());
-            
         });
         husky::lib::AggregatorFactory::sync();  
     }
@@ -62,12 +61,13 @@ public:
 
 protected:
     vector<husky::lib::Aggregator<vector<RecordT>>> _aggs;
+    vector<int> _numVectorEachAgg;
     int _expectedItemsPerAgg = -1;
 
-    husky::lib::Aggregator<vector<RecordT>> genVecAgg(int capacity) {
+    husky::lib::Aggregator<vector<RecordT>> genVecAgg(int size) {
 
         husky::lib::Aggregator<vector<RecordT>> agg(
-            vector<RecordT> (capacity),
+            vector<RecordT> (size),
             [](vector<RecordT>& a, const vector<RecordT>& b){
                 for (int i = 0; i < b.size(); ++i) {
                     if (b[i].size() != 0) {
@@ -76,8 +76,8 @@ protected:
                     }
                 }
             },
-            [&capacity](vector<RecordT>& col){
-                col = vector<RecordT> (capacity);
+            [size](vector<RecordT>& col){
+                col = vector<RecordT> (size);
             });
 
         return agg; 

@@ -88,16 +88,17 @@ void knngraph_train(
         // build reverse kNN
         // train
         // 1. clustering
-        // unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
-        // AdjObject::randomClustering(adj_list, labels);
-        
         unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
+        AdjObject::randomClustering(adj_list, labels);
+        
+        // unordered_set<unsigned> labels = sampleRand(numData, numBlocks);
         // unordered_set<unsigned> labels = AdjObject::getKIdMaxIndegree(adj_list, numBlocks);
-        AdjObject::bfsClustering(adj_list, labels);
+        // AdjObject::bfsClustering(adj_list, labels);
 
         if (husky::Context::get_global_tid() == 0) {
             husky::LOG_I << "iteration " << i << " starts knn graph training" << std::endl;
         }
+
         // 2. build block_list and train
         // #cc = #blocks
         // Block::train(adj_list, data_list, distor);
