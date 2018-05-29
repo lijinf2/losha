@@ -21,6 +21,7 @@
 #include "dataadjhandler.h"
 #include "block.h"
 #include "dataagg.h"
+#include "pqblock.h"
 // #include "knngraph_train.h"
 // #include "knnloader.h"
 using namespace husky::losha;
@@ -48,6 +49,10 @@ void knngraph_train(
 
     DataObject<FeatureType>::loadIdFvecs(data_list, itemPath, dimension);
     int numData = count(data_list);
+
+    // Apply PQ
+    auto & pq_list =
+        husky::ObjListStore::create_objlist<PQBlock>();
 
     // initi adj_list, assume the id ranges from 0 - n - 1, load groundtruth
     auto & adj_list =
