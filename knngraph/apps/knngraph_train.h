@@ -103,7 +103,7 @@ void knngraph_train(
         // #cc = #blocks
         // Block::train(adj_list, data_list, distor);
         //
-        Block::trainFitMem(adj_list, dataset, distor);
+        AdjObject::trainFitMem(adj_list, dataset, distor);
 
         // 3. get recall
         float avgRecall = AdjObject::calSampleAvgRecall(adj_list);
