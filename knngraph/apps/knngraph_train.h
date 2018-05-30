@@ -50,16 +50,16 @@ void knngraph_train(
     DataObject<FeatureType>::loadIdFvecs(data_list, itemPath, dimension);
     int numData = count(data_list);
 
-    // Apply PQ
-    auto & pq_list =
-        husky::ObjListStore::create_objlist<PQBlock>();
-
     // initi adj_list, assume the id ranges from 0 - n - 1, load groundtruth
     auto & adj_list =
         husky::ObjListStore::create_objlist<AdjObject>();
 
     int maxItemId = numData - 1;
     DataAdjHandler::buildAdjFromData(data_list, adj_list, sampleGroundtruthPath, maxItemId, numNBPerNode);
+
+    // Apply PQ
+    PQBlockAgg<FeatureType> agg(data_list, distor, numData);
+    PQBlockAgg<FeatureType>::initAdjList(data_list, adj_list, agg, distor, numNBPerNode);
 
     // debug infor
     // husky::list_execute(

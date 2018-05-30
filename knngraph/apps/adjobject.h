@@ -46,8 +46,11 @@ public:
         unordered_set<int> visited;
         visited.reserve(msgs.size() + _foundKNN.size());
 
+        float maxLimitDist = std::numeric_limits<float>::max();
         for (const auto& p : _foundKNN) {
-            visited.insert(p.first);
+            if (p.second != maxLimitDist) {
+                visited.insert(p.first);
+            }
         }
 
         auto comparator = 
