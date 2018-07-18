@@ -34,9 +34,10 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
     $ cd ../gqr/ && mkdir build && cd ./script
     $ sh cal_groundtruth.sh
 
-### Run in single machine (assume the hostname is master)
+### Run in single machine (assume the hostname is master, Master run in one terminal and e2lsh runs in another terminal)
     $ cd ../../script
     $ ../build/husky/Master --conf ../conf/e2lsh.conf
+    $ // open another shell to run e2lsh
     $ ../build/e2lsh --conf ../conf/e2lsh.conf
     $ sh evaluate.sh
 
@@ -46,8 +47,9 @@ We assume you have set up a NFS director (denoeted as /data) that every machine 
     $ sh evaluate.sh
 
 ## Tips
-    - We have tried our best to simplify the deployment. But setting up a distributed system is still not easy, we suggest to set up GQR and Husky before using LoSHa. 
-    - Please remove outputs on HDFS before the next try.
+    - Master and e2lsh run on two different shells
+    - Always remove output files on HDFS before next try.
+    - We suggest to set up GQR and Husky before using LoSHa. 
 
 ## Reference
 
